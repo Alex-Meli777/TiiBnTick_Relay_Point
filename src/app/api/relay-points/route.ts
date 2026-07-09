@@ -3,7 +3,7 @@ import {
   searchRelayPoints,
   createRelayPoint,
 } from "@/lib/relayData";
-import type { RelayPoint } from "@/types/relayPoint";
+import { relayPointSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -39,20 +39,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  try {
-    const body = (await request.json()) as Omit<RelayPoint, "id">;
-    if (!body.name || !body.city) {
-      return NextResponse.json(
-        { success: false, error: "Données invalides" },
-        { status: 400 }
-      );
-    }
-    const point = createRelayPoint(body);
-    return NextResponse.json({ success: true, data: point }, { status: 201 });
-  } catch {
+  const body = await request.json().catch(() => null);
+  const parsed = relayPointSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: "Données invalides" },
+      {
+        success: false,
+        error: parsed.error.issues.map((i) => i.message).join(", "),
+      },
       { status: 400 }
     );
   }
+
+  const point = createRelayPoint(parsed.data);
+  return NextResponse.json({ success: true, data: point }, { status: 201 });
 }

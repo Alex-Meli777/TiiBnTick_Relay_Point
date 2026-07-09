@@ -4,7 +4,7 @@ import type {
   HandoverEvent,
   RelayNotification,
   DeliveryTrackingSession,
-  RelayPointApplication,
+  StoredRelayPointApplication,
 } from "@/types/relayPoint";
 
 const defaultHours = (
@@ -302,7 +302,7 @@ export const relayStore = {
   handoverEvents: [...initialHandoverEvents] as HandoverEvent[],
   notifications: [...initialNotifications] as RelayNotification[],
   trackingSessions: [...initialTrackingSessions] as DeliveryTrackingSession[],
-  applications: [] as Array<RelayPointApplication & { id: string; submittedAt: string }>,
+  applications: [] as StoredRelayPointApplication[],
 };
 
 const globalStore = globalThis as unknown as { __relaySeedStore?: typeof relayStore };

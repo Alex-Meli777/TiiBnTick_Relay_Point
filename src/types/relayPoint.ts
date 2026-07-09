@@ -112,6 +112,26 @@ export interface RelayPointApplication {
   description?: string;
 }
 
+export interface RelayPointApplication {
+  applicantName: string;
+  applicantPhone: string;
+  applicantEmail?: string;
+  businessName: string;
+  type: RelayPoint["type"];
+  country: string;
+  region: string;
+  city: string;
+  address: string;
+  lieuDit: string;
+  description?: string;
+}
+
+export interface StoredRelayPointApplication extends RelayPointApplication {
+  id: string;
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 export interface DeliveryTrackingSession {
   id: string;
   trackingNumber: string;

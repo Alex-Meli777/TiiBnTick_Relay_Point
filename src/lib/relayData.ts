@@ -5,6 +5,7 @@ import type {
   RelayPointSearchQuery,
   RelayPointSearchResult,
   RelayPointApplication,
+  StoredRelayPointApplication,
   RelayParcelEntry,
   HandoverEvent,
   RelayNotification,
@@ -59,15 +60,112 @@ export function createRelayPoint(data: Omit<RelayPoint, "id">): RelayPoint {
 
 export function applyForRelayPoint(
   data: RelayPointApplication
-): { id: string; submittedAt: string } & RelayPointApplication {
+): StoredRelayPointApplication {
   const store = getMutableStore();
-  const application = {
+  const application: StoredRelayPointApplication = {
     ...data,
     id: generateId("app"),
     submittedAt: new Date().toISOString(),
+    status: "pending",
   };
   store.applications.push(application);
   return application;
+}
+
+const DEFAULT_OPENING_HOURS: RelayPoint["openingHours"] = [
+  { day: "mon", open: "08:00", close: "18:00" },
+  { day: "tue", open: "08:00", close: "18:00" },
+  { day: "wed", open: "08:00", close: "18:00" },
+  { day: "thu", open: "08:00", close: "18:00" },
+  { day: "fri", open: "08:00", close: "18:00" },
+  { day: "sat", open: "09:00", close: "13:00" },
+  { day: "sun", open: "00:00", close: "00:00" },
+];
+
+export function updateRelayPoint(
+  id: string,
+  data: Partial<Omit<RelayPoint, "id">>
+): RelayPoint | null {
+  const store = getMutableStore();
+  const point = store.relayPoints.find((rp) => rp.id === id);
+  if (!point) return null;
+  Object.assign(point, data);
+  return point;
+}
+
+export function deleteRelayPoint(
+  id: string
+): { deleted: boolean; error?: string } {
+  const store = getMutableStore();
+  const index = store.relayPoints.findIndex((rp) => rp.id === id);
+  if (index === -1) {
+    return { deleted: false, error: "Point relais introuvable" };
+  }
+
+  const point = store.relayPoints[index];
+  if (point.currentLoad > 0) {
+    return {
+      deleted: false,
+      error:
+        "Impossible de supprimer : des colis sont encore stockés dans ce point relais",
+    };
+  }
+
+  store.relayPoints.splice(index, 1);
+  return { deleted: true };
+}
+
+export function listApplications(
+  status?: StoredRelayPointApplication["status"]
+): StoredRelayPointApplication[] {
+  const store = getMutableStore();
+  return status
+    ? store.applications.filter((a) => a.status === status)
+    : store.applications;
+}
+
+export function approveApplication(
+  id: string,
+  overrides?: Partial<
+    Pick<RelayPoint, "latitude" | "longitude" | "capacity" | "handlingFee" | "openingHours">
+  >
+): RelayPoint | null {
+  const store = getMutableStore();
+  const application = store.applications.find((a) => a.id === id);
+  if (!application || application.status !== "pending") return null;
+
+  const point: RelayPoint = {
+    id: generateId("rp"),
+    name: application.businessName,
+    type: application.type,
+    country: application.country,
+    region: application.region,
+    city: application.city,
+    address: application.address,
+    lieuDit: application.lieuDit,
+    latitude: overrides?.latitude ?? 0,
+    longitude: overrides?.longitude ?? 0,
+    ownerName: application.applicantName,
+    ownerPhone: application.applicantPhone,
+    ownerEmail: application.applicantEmail,
+    openingHours: overrides?.openingHours ?? DEFAULT_OPENING_HOURS,
+    capacity: overrides?.capacity ?? 20,
+    currentLoad: 0,
+    handlingFee: overrides?.handlingFee ?? 500,
+    status: "active",
+  };
+
+  store.relayPoints.push(point);
+  application.status = "approved";
+  return point;
+}
+
+export function rejectApplication(id: string): boolean {
+  const store = getMutableStore();
+  const application = store.applications.find((a) => a.id === id);
+  if (!application || application.status !== "pending") return false;
+  application.status = "rejected";
+  return true;
 }
 
 export function getParcelsByRelayPoint(
