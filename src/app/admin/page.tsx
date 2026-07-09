@@ -84,7 +84,7 @@ export default function AdminPage() {
               {loginLoading ? "Connexion..." : "Se connecter"}
             </button>
           </form>
-          <p className="text-xs text-gray-400 text-center mt-4">Mot de passe par défaut : <code className="bg-gray-100 px-1 rounded">admin123</code></p>
+
         </div>
       </div>
     );
