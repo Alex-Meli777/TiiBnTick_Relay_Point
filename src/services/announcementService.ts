@@ -4,108 +4,101 @@ import apiClient from "@/lib/axios";
 export interface AnnouncementResponseDTO {
   id: string;
   status: string;
+  title: string;
+  amount: number;
+  description?: string;
+  pickupAddress?: any;
+  deliveryAddress?: any;
   [key: string]: any;
 }
 
 export interface SubscriptionResponseDTO {
   subscriptionId: string;
   deliveryPersonId: string;
-  [key: string]: any;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  rating?: number;
 }
 
-// Helper function to map unified backend Delivery DTOs to UI AnnouncementResponseDTOs
-function mapDeliveryToAnnouncement(delivery: any): AnnouncementResponseDTO {
-  return {
-    id: delivery.id,
-    title: delivery.contains?.designation || "Colis sans titre",
-    description: delivery.contains?.description || "",
-    status: delivery.status,
-    amount: delivery.contains?.weight
-      ? parseFloat(delivery.contains.weight) * 300 + 1500
-      : 1500,
-    distance: 5.5, // Standard mock value
-    duration: 15, // Standard mock value
-    createdAt: delivery.createdAt,
-    pickupAddress: {
-      street: delivery.sender?.locatedAt?.street || "",
-      city: delivery.sender?.locatedAt?.city || "Yaoundé",
-      district: delivery.sender?.locatedAt?.street || "",
-    },
-    deliveryAddress: {
-      street: delivery.recipient?.locatedAt?.street || "",
-      city: delivery.recipient?.locatedAt?.city || "Yaoundé",
-      district: delivery.recipient?.locatedAt?.street || "",
-    },
-    packet: {
-      designation: delivery.contains?.designation || "",
-      description: delivery.contains?.description || "",
-      weight: delivery.contains?.weight || "0",
-      photoPacket: null,
-    },
-    assignedDeliveryPersonFirstName: delivery.assignedTo ? "Paul" : null,
-    assignedDeliveryPersonLastName: delivery.assignedTo ? "Livreur" : null,
-    assignedDeliveryPersonPhone: delivery.assignedTo ? "699000002" : null,
-    assignedDeliveryPersonEmail: delivery.assignedTo
-      ? "livreur@test.com"
-      : null,
-  };
-}
-
+// Fetch all deliveries created by this client
 export const getAnnouncementByClientId = async (
   clientId: string,
 ): Promise<AnnouncementResponseDTO[]> => {
   try {
-    const response = await apiClient.get("/api/deliveries");
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      return response.data.data.map(mapDeliveryToAnnouncement);
+    const res = await apiClient.get("/api/deliveries");
+    if (res.data && res.data.success) {
+      // Map domain model to frontend DTO structure
+      return res.data.data.map((d: any) => ({
+        id: d.id,
+        title: d.contains.designation || "Colis",
+        description: d.contains.description || "",
+        status: d.status,
+        amount: d.contains.weight
+          ? parseFloat(d.contains.weight) * 300 + 1500
+          : 1500,
+        pickupAddress: d.sender.locatedAt,
+        deliveryAddress: d.recipient.locatedAt,
+        recipientFirstName: d.recipient.name.split(" ")[0] || "",
+        recipientLastName: d.recipient.name.split(" ").slice(1).join(" ") || "",
+        recipientPhone: d.recipient.phone,
+        recipientEmail: d.recipient.email || "",
+        shipperFirstName: d.sender.name.split(" ")[0] || "",
+        shipperLastName: d.sender.name.split(" ").slice(1).join(" ") || "",
+        shipperPhone: d.sender.phone,
+        shipperEmail: d.sender.email || "",
+      }));
     }
     return [];
-  } catch (error) {
-    console.error("Error fetching announcements for client:", error);
+  } catch (e) {
+    console.error("Error fetching client announcements:", e);
     return [];
   }
 };
 
 export const deleteAnnouncement = async (id: string): Promise<void> => {
-  await apiClient.delete(`/api/deliveries/${id}`);
+  await apiClient.delete(`/api/announcements/${id}`);
 };
 
 export const publishAnnouncement = async (id: string): Promise<any> => {
-  const response = await apiClient.put(`/api/deliveries/${id}`, {
-    status: "PENDING",
+  const res = await apiClient.put(`/api/announcements/${id}`, {
+    status: "PUBLISHED",
   });
-  return response.data;
+  return res.data;
 };
 
 export const updateAnnouncement = async (
   id: string,
   payload: any,
 ): Promise<any> => {
-  const response = await apiClient.put(`/api/deliveries/${id}`, payload);
-  return response.data;
+  const res = await apiClient.put(`/api/announcements/${id}`, payload);
+  return res.data;
 };
 
+// Fetch deliverer requests (subscriptions) for a specific delivery order
 export const getSubscriptions = async (
   annId: string,
 ): Promise<SubscriptionResponseDTO[]> => {
   try {
-    const response = await apiClient.get("/api/deliver-requests");
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      const candidates = response.data.data.filter(
-        (req: any) => req.deliveryId === annId,
-      );
-      return candidates.map((c: any) => ({
-        subscriptionId: c.id,
-        deliveryPersonId: c.deliverId,
-        firstName: "Paul",
-        lastName: "Livreur",
-        phone: "699000002",
-        email: "livreur@test.com",
+    const res = await apiClient.get("/api/deliver-requests");
+    if (res.data && res.data.success) {
+      const requests = res.data.data.filter((r: any) => r.deliveryId === annId);
+
+      // Map raw requests to subscriber profile DTOs
+      return requests.map((r: any) => ({
+        subscriptionId: r.id,
+        deliveryPersonId: r.deliverId,
+        firstName: "Livreur",
+        lastName: r.deliverId.substring(0, 6),
+        phone: "699000000",
+        email: "livreur@platform.com",
         rating: 4.8,
       }));
     }
     return [];
-  } catch {
+  } catch (e) {
+    console.error("Error fetching subscriptions:", e);
     return [];
   }
 };
@@ -114,54 +107,65 @@ export const assignDeliveryPerson = async (
   annId: string,
   devId: string,
 ): Promise<any> => {
-  const response = await apiClient.get("/api/deliver-requests");
-  if (response.data?.success && Array.isArray(response.data.data)) {
-    const match = response.data.data.find(
-      (req: any) => req.deliveryId === annId && req.deliverId === devId,
-    );
-    if (match) {
-      const acceptRes = await apiClient.put(
-        `/api/deliver-requests/${match.id}/accept`,
-      );
-      return acceptRes.data;
-    }
-  }
-  throw new Error("No active delivery request found to assign.");
+  const res = await apiClient.put(`/api/deliver-requests/${annId}/accept`);
+  return res.data;
 };
 
+// Fetch deliveries with "PENDING" status
 export const getPublishedAnnouncements = async (): Promise<
   AnnouncementResponseDTO[]
 > => {
   try {
-    const response = await apiClient.get("/api/deliveries");
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      return response.data.data
+    const res = await apiClient.get("/api/deliveries");
+    if (res.data && res.data.success) {
+      return res.data.data
         .filter((d: any) => d.status === "PENDING")
-        .map(mapDeliveryToAnnouncement);
+        .map((d: any) => ({
+          id: d.id,
+          title: d.contains.designation || "Colis",
+          description: d.contains.description || "",
+          status: d.status,
+          amount: d.contains.weight
+            ? parseFloat(d.contains.weight) * 300 + 1500
+            : 1500,
+          pickupAddress: d.sender.locatedAt,
+          deliveryAddress: d.recipient.locatedAt,
+          recipientFirstName: d.recipient.name,
+          recipientPhone: d.recipient.phone,
+        }));
     }
     return [];
-  } catch {
+  } catch (e) {
+    console.error("Error in getPublishedAnnouncements:", e);
     return [];
   }
 };
 
+// Fetch deliveries currently assigned to a deliverer
 export const getDeliveryPersonSubscriptions = async (
   id: string,
-): Promise<AnnouncementResponseDTO[]> => {
+): Promise<any[]> => {
   try {
-    const response = await apiClient.get("/api/deliveries");
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      return response.data.data
+    const res = await apiClient.get("/api/deliveries");
+    if (res.data && res.data.success) {
+      return res.data.data
         .filter((d: any) => d.assignedTo === id)
-        .map(mapDeliveryToAnnouncement);
+        .map((d: any) => ({
+          id: d.id,
+          title: d.contains.designation || "Colis",
+          status: d.status,
+          pickupAddress: d.sender.locatedAt,
+          deliveryAddress: d.recipient.locatedAt,
+        }));
     }
     return [];
-  } catch {
+  } catch (e) {
+    console.error("Error getting deliverer subscriptions:", e);
     return [];
   }
 };
 
 export const createAnnouncement = async (payload: any): Promise<any> => {
-  const response = await apiClient.post("/api/deliveries", payload);
-  return response.data;
+  const res = await apiClient.post("/api/deliveries", payload);
+  return res.data;
 };
