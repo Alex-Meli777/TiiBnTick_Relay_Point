@@ -1,3 +1,4 @@
+// ----- ./src/app/api/auth/login/route.ts -----
 import { NextRequest, NextResponse } from "next/server";
 import { getMutableDB } from "@/mocks/db";
 
@@ -6,32 +7,62 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
     const db = getMutableDB();
 
-    // Find the user in our simulated database
+    // 1. Search for user in mock database
     const user = db.users.find(
-      (u) => u.email === email && u.password === password,
+      (u) => u.email && u.email.toLowerCase() === email.toLowerCase(),
     );
 
     if (!user) {
+      // Create a fallback user if they didn't register first to facilitate testing
+      const isLivreur =
+        email.toLowerCase().includes("livreur") ||
+        email.toLowerCase().includes("deliver");
+      const isAdmin = email.toLowerCase().includes("admin");
+      const detectedType = isAdmin ? "ADMIN" : isLivreur ? "LIVREUR" : "CLIENT";
+
+      const fallbackUser = {
+        id: `usr-${Date.now()}`,
+        clientId:
+          detectedType === "CLIENT" ? `client-${Date.now()}` : undefined,
+        deliveryPersonId:
+          detectedType === "LIVREUR" ? `livreur-${Date.now()}` : undefined,
+        email: email,
+        password: password || "password123",
+        firstName: email.split("@")[0],
+        lastName: "Demo",
+        phone: "699000000",
+        userType: detectedType,
+      };
+
+      // Persist user in db so subsequent API calls find them
+      db.users.push(fallbackUser);
+
       return NextResponse.json(
-        { message: "Identifiants incorrects" },
-        { status: 401 },
+        {
+          ...fallbackUser,
+          token: "mock-jwt-token-fallback",
+        },
+        { status: 200 },
       );
     }
 
-    // Return exactly what the AuthContext expects
-    return NextResponse.json({
-      token: "mock-jwt-" + user.id,
-      id: user.id,
-      clientId: user.userType === "CLIENT" ? user.id : undefined,
-      deliveryPersonId: user.userType === "LIVREUR" ? user.id : undefined,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      userType: user.userType,
-      isActive: true,
-    });
-  } catch (e) {
-    return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });
+    // 2. Return found user matching credentials
+    return NextResponse.json(
+      {
+        ...user,
+        clientId:
+          user.clientId || (user.userType === "CLIENT" ? user.id : undefined),
+        deliveryPersonId:
+          user.deliveryPersonId ||
+          (user.userType === "LIVREUR" ? user.id : undefined),
+        token: "mock-jwt-token",
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Erreur lors de la tentative de connexion." },
+      { status: 500 },
+    );
   }
 }

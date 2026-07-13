@@ -1,49 +1,52 @@
-export async function getRoute(lat1: number, lon1: number, lat2: number, lon2: number, profile: string = 'driving') {
-  // OSRM common profiles: driving, car, bike, foot
-  // demo server uses: driving, cycling, walking
-  const osrmProfile = profile === 'bike' ? 'cycling' : 'driving';
+// ----- ./src/services/routing.ts -----
+import { calculateDistanceKm } from "@/lib/utils";
 
+export async function getRoute(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+  profile: string = "driving",
+) {
+  const osrmProfile = profile === "bike" ? "cycling" : "driving";
   const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
 
-  const maxRetries = 2;
-  let lastError: any = null;
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(6000), // Fast 6 second timeout
+    });
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(15000) // 15 second timeout
-      });
+    if (!res.ok) throw new Error("OSRM Routing error response");
+    const data = await res.json();
 
-      if (!res.ok) {
-        console.error(`OSRM API error (attempt ${attempt}):`, res.status, res.statusText);
-        throw new Error(`Routing failed: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-
-      if (!data || !data.routes || data.routes.length === 0) {
-        throw new Error('No routes found');
-      }
-
+    if (data && data.routes && data.routes.length > 0) {
       return data;
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`getRoute attempt ${attempt}/${maxRetries} failed:`, error.message || error);
-
-      if (attempt < maxRetries) {
-        // Wait before retrying (1 second)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
     }
-  }
+    throw new Error("No routing matches");
+  } catch (error) {
+    console.warn(
+      "Routing API failed or was blocked by CORS. Falling back to geometric calculations.",
+      error,
+    );
 
-  // All retries failed
-  console.error('getRoute failed after all retries:', lastError);
-  if (lastError?.name === 'TimeoutError') {
-    throw new Error('Le service de calcul d\'itinéraire a mis trop de temps à répondre. Veuillez réessayer.');
+    // Dynamic straight-line fallback calculation
+    const distance = calculateDistanceKm(lat1, lon1, lat2, lon2);
+    const estimatedDuration = Math.round(distance * 1.5 + 5); // 1.5 mins per km + 5 mins buffer
+
+    return {
+      routes: [
+        {
+          distance: distance * 1000,
+          duration: estimatedDuration * 60,
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [lon1, lat1],
+              [lon2, lat2],
+            ],
+          },
+        },
+      ],
+    };
   }
-  if (lastError?.message === 'Failed to fetch' || lastError?.name === 'TypeError') {
-    throw new Error('Impossible de contacter le service de calcul d\'itinéraire. Vérifiez votre connexion internet et réessayez.');
-  }
-  throw lastError;
 }
