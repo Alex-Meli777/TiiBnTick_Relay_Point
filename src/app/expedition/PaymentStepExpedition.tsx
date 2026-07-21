@@ -198,6 +198,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
       
       // Map the UI state to your structured domain types
       const payload = {
+        clientId,
         sender: {
           name: allData.senderFirstName,
           phone: allData.senderPhone,

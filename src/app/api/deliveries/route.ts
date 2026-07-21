@@ -8,6 +8,7 @@ import { generateId } from "@/lib/utils";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('[DEBUG] /api/deliveries POST body:', JSON.stringify(body));
 
     const weightVal =
       body.contains?.weight || body.packet?.weight || body.weight || 1;
@@ -53,6 +54,12 @@ export async function POST(request: NextRequest) {
             country: body.recipientCountry || "Cameroun",
           },
       },
+      clientId:
+        body.clientId ||
+        body.client?.id ||
+        body.userId ||
+        body.sender?.clientId ||
+        undefined,
       contains: {
         weight: isNaN(parsedWeight) ? 1 : parsedWeight,
         dimensions:
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
+    console.error('[ERROR] /api/deliveries POST failed:', error);
     return NextResponse.json(
       { success: false, error: "Données d'expédition invalides." },
       { status: 400 },

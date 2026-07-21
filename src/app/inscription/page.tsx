@@ -1556,7 +1556,7 @@ export default function RegisterPage() {
         <div className="max-w-md mx-auto text-center">
           <p className="text-xs md:text-sm text-gray-600">
             Vous avez déjà un compte?{' '}
-            <Link href="/" className="text-orange-500 hover:text-orange-600 font-semibold">
+            <Link href="/login" className="text-orange-500 hover:text-orange-600 font-semibold">
               Se connecter
             </Link>
           </p>

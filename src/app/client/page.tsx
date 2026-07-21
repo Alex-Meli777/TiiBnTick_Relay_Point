@@ -109,6 +109,70 @@ export function ClientLanding() {
     }
   }, [activeTab, fetchAnnouncements])
 
+  useEffect(() => {
+    // Subscribe on both user.id and user.clientId so notifications reach the client regardless of identifier used by backend
+    const ids: string[] = [];
+    if (user?.id) ids.push(user.id);
+    if (user?.clientId && user.clientId !== user.id) ids.push(user.clientId);
+    if (ids.length === 0) return;
+
+    const sources: EventSource[] = [];
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const matchingEvent = JSON.parse(event.data);
+        if (!matchingEvent || !matchingEvent.type) return;
+
+        if (matchingEvent.type === "DELIVER_REQUEST") {
+          toast({
+            title: "Nouvelle réponse",
+            description: "Un livreur a postulé à l'une de vos annonces. Consultez l'onglet Réponses.",
+          });
+
+          // If the notification contains the request object, update local subscriptions state
+          const req = matchingEvent.request;
+          if (req && subscriptionsDialogOpen && selectedResponseAnnouncement?.id === req.deliveryId) {
+            const mapped = {
+              subscriptionId: req.id,
+              deliveryPersonId: req.deliverId,
+              firstName: "Livreur",
+              lastName: req.deliverId?.substring?.(0, 6) || "",
+              phone: "699000000",
+              email: "livreur@platform.com",
+              rating: 4.8,
+            } as SubscriptionResponseDTO;
+            setSubscriptions((prev) => [mapped, ...prev]);
+          }
+
+          // Refresh listings for the Reponses tab
+          fetchResponsesAnnouncements();
+        }
+
+        if (matchingEvent.type === "REQUEST_ACCEPTED") {
+          toast({
+            title: "Livreur assigné",
+            description:
+              "Votre commande a été acceptée et assignée à un livreur.",
+          });
+          fetchAnnouncements();
+        }
+      } catch (err) {
+        console.error("Error parsing SSE event:", err);
+      }
+    };
+
+    for (const id of ids) {
+      const es = new EventSource(`/api/notifications/stream/${id}`);
+      es.onmessage = handleMessage;
+      es.onerror = () => es.close();
+      sources.push(es);
+    }
+
+    return () => {
+      for (const s of sources) s.close();
+    };
+  }, [user?.id, user?.clientId, fetchAnnouncements]);
+
   const fetchResponsesAnnouncements = async () => {
     if (!user?.clientId) return
     setResponsesLoading(true)
@@ -750,7 +814,8 @@ const handleAssignDeliveryPerson = async (requestId: string) => {
             ) : (
               <div className="grid gap-4">
                 {responsesAnnouncements
-                  .filter(a => a.status === 'PUBLISHED' || a.status === 'ASSIGNED')
+                  // Keep pending announcements visible in the Responses tab so the client sees requests on newly created orders.
+                  .filter(a => a.status === 'PENDING' || a.status === 'PUBLISHED' || a.status === 'ASSIGNED')
                   .map((announcement) => (
                     <Card key={announcement.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="p-4 sm:p-5">
@@ -763,9 +828,13 @@ const handleAssignDeliveryPerson = async (requestId: string) => {
                                   <CheckCircle2 className="w-3 h-3 mr-1" />
                                   Assigné
                                 </Badge>
-                              ) : (
+                              ) : announcement.status === 'PUBLISHED' ? (
                                 <Badge className="bg-blue-100 text-blue-700 border-blue-200">
                                   Publiée
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                                  En attente
                                 </Badge>
                               )}
                             </div>

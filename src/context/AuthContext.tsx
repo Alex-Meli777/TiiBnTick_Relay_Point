@@ -1,4 +1,5 @@
 "use client";
+import { routeModule } from "next/dist/build/templates/app-page";
 import React, {
   createContext,
   useContext,
@@ -41,16 +42,41 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData: User) => setUser(userData);
-  const logout = () => {setUser(null); window.location.href = "/";};
+  const login = (userData: User) => {
+    setUser(userData);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("tiibntick_user", JSON.stringify(userData));
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("tiibntick_user");
+    }
+    window.location.href = "/";
+  };
+
   const refreshUser = async () => {
-    // If we have a user in state, just keep them to prevent infinite loading
-    if (user) {
+    if (typeof window !== "undefined") {
+      const storedUser = window.localStorage.getItem("tiibntick_user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          setUser(null);
+          window.localStorage.removeItem("tiibntick_user");
+        }
+      }
       setLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    refreshUser();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>

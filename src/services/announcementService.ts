@@ -29,26 +29,28 @@ export const getAnnouncementByClientId = async (
   try {
     const res = await apiClient.get("/api/deliveries");
     if (res.data && res.data.success) {
-      // Map domain model to frontend DTO structure
-      return res.data.data.map((d: any) => ({
-        id: d.id,
-        title: d.contains.designation || "Colis",
-        description: d.contains.description || "",
-        status: d.status,
-        amount: d.contains.weight
-          ? parseFloat(d.contains.weight) * 300 + 1500
-          : 1500,
-        pickupAddress: d.sender.locatedAt,
-        deliveryAddress: d.recipient.locatedAt,
-        recipientFirstName: d.recipient.name.split(" ")[0] || "",
-        recipientLastName: d.recipient.name.split(" ").slice(1).join(" ") || "",
-        recipientPhone: d.recipient.phone,
-        recipientEmail: d.recipient.email || "",
-        shipperFirstName: d.sender.name.split(" ")[0] || "",
-        shipperLastName: d.sender.name.split(" ").slice(1).join(" ") || "",
-        shipperPhone: d.sender.phone,
-        shipperEmail: d.sender.email || "",
-      }));
+      return res.data.data
+        .filter((d: any) => d.clientId === clientId)
+        .map((d: any) => ({
+          id: d.id,
+          title: d.contains.designation || "Colis",
+          description: d.contains.description || "",
+          status: d.status,
+          amount: d.contains.weight
+            ? parseFloat(d.contains.weight) * 300 + 1500
+            : 1500,
+          pickupAddress: d.sender.locatedAt,
+          deliveryAddress: d.recipient.locatedAt,
+          recipientFirstName: d.recipient.name.split(" ")[0] || "",
+          recipientLastName: d.recipient.name.split(" ").slice(1).join(" ") || "",
+          recipientPhone: d.recipient.phone,
+          recipientEmail: d.recipient.email || "",
+          shipperFirstName: d.sender.name.split(" ")[0] || "",
+          shipperLastName: d.sender.name.split(" ").slice(1).join(" ") || "",
+          shipperPhone: d.sender.phone,
+          shipperEmail: d.sender.email || "",
+          clientId: d.clientId,
+        }));
     }
     return [];
   } catch (e) {

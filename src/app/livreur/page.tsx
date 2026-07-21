@@ -115,55 +115,74 @@ export function LivreurDashboard() {
     fetchMyDeliveries();
   }, [fetchAvailableDeliveries, fetchMyDeliveries]);
 
-  // Real-time notifications via SSE
+  // Real-time notifications via SSE — subscribe on both `user.id` and `user.deliveryPersonId` when present
   useEffect(() => {
-    if (!user?.id) return;
-    const token = localStorage.getItem("token");
-    const eventSource = new EventSource(
-      `/api/notifications/stream/${user.id}${token ? `?token=${token}` : ""}`,
-    );
+    const ids: string[] = [];
+    if (user?.id) ids.push(user.id);
+    if (user?.deliveryPersonId && user.deliveryPersonId !== user.id) ids.push(user.deliveryPersonId);
+    if (ids.length === 0) return;
 
-    eventSource.onmessage = (event) => {
+    const token = localStorage.getItem("token");
+    const sources: EventSource[] = [];
+
+    const handleMessage = (event: MessageEvent) => {
       try {
         const matchingEvent = JSON.parse(event.data);
+        if (!matchingEvent || !matchingEvent.type) return;
 
-        // CORRECTION: Add safety guard to reject matching pings/connected states that don't have announcementId
-        if (matchingEvent && matchingEvent.announcementId) {
-          apiClient
-            .get(`/api/announcements/${matchingEvent.announcementId}`)
-            .then((res: any) => {
-              const announcement = res.data;
-              setAvailableDeliveries((prev) => {
-                if (prev.find((d) => d.id === announcement.id)) return prev;
-                return [announcement as AnnouncementResponseDTO, ...prev];
-              });
-              toast({
-                title: "Nouvelle course disponible !",
-                description:
-                  announcement.title ||
-                  "Une nouvelle course correspond à votre position.",
-              });
-            })
-            .catch((err) =>
-              console.error(
-                "Error fetching incoming announcement details:",
-                err,
-              ),
-            );
+        if (matchingEvent.type === "NEW_DELIVERY") {
+          const announcement = matchingEvent.announcement;
+
+          if (announcement && announcement.id) {
+            setAvailableDeliveries((prev) => {
+              if (prev.find((d) => d.id === announcement.id)) return prev;
+              return [announcement as AnnouncementResponseDTO, ...prev];
+            });
+            toast({
+              title: "Nouvelle course disponible !",
+              description: announcement.title || "Une nouvelle course correspond à votre position.",
+            });
+          } else if (matchingEvent.announcementId) {
+            apiClient
+              .get(`/api/announcements/${matchingEvent.announcementId}`)
+              .then((res: any) => {
+                const announcement = res.data;
+                setAvailableDeliveries((prev) => {
+                  if (prev.find((d) => d.id === announcement.id)) return prev;
+                  return [announcement as AnnouncementResponseDTO, ...prev];
+                });
+                toast({
+                  title: "Nouvelle course disponible !",
+                  description: announcement.title || "Une nouvelle course correspond à votre position.",
+                });
+              })
+              .catch((err) => console.error("Error fetching incoming announcement details:", err));
+          }
+        }
+
+        if (matchingEvent.type === "REQUEST_ACCEPTED") {
+          toast({
+            title: "Demande acceptée",
+            description: "Votre candidature a été acceptée. La course est maintenant assignée.",
+          });
+          fetchMyDeliveries();
         }
       } catch (err) {
         console.error("Error parsing SSE event:", err);
       }
     };
 
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
+    for (const id of ids) {
+      const es = new EventSource(`/api/notifications/stream/${id}${token ? `?token=${token}` : ""}`);
+      es.onmessage = handleMessage;
+      es.onerror = () => es.close();
+      sources.push(es);
+    }
 
     return () => {
-      eventSource.close();
+      for (const s of sources) s.close();
     };
-  }, [user?.id, toast]);
+  }, [user?.id, user?.deliveryPersonId, toast]);
 
   useEffect(() => {
     if (

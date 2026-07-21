@@ -32,3 +32,9 @@ next-env.d.ts
 
 # IDE
 .idea/
+
+# ANALYSIS & CONCEPTION
+/ana-con
+
+# OTHER IMPORTANT FOR CODE
+/others

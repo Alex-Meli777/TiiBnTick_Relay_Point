@@ -33,6 +33,7 @@ export interface Delivery {
   contains: Parcel;
   sender: ContactInfo;
   recipient: ContactInfo;
+  clientId?: string;
   assignedTo?: string; // ID of the Deliver (Livreur)
   pickupFrom?: string; // ID of the RelayPoint (Optional)
   dropOffAt?: string; // ID of the RelayPoint (Optional)

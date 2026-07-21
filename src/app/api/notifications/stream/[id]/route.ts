@@ -1,22 +1,28 @@
 // ----- ./src/app/api/notifications/stream/[id]/route.ts -----
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  addNotificationListener,
+  removeNotificationListener,
+} from "@/lib/notificationHub";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const userId = params.id;
   const encoder = new TextEncoder();
 
   const customStream = new ReadableStream({
     start(controller) {
+      addNotificationListener(userId, controller);
+
       // Send connection established event
       controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ status: "connected", client: params.id })}\n\n`,
+          `data: ${JSON.stringify({ status: "connected", userId })}\n\n`,
         ),
       );
 
-      // Stream periodic connection pings
       const interval = setInterval(() => {
         try {
           controller.enqueue(
@@ -24,11 +30,13 @@ export async function GET(
           );
         } catch (e) {
           clearInterval(interval);
+          removeNotificationListener(userId, controller);
         }
       }, 10000);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(interval);
+        removeNotificationListener(userId, controller);
       });
     },
   });
@@ -41,5 +49,3 @@ export async function GET(
     },
   });
 }
-
-import { NextResponse } from "next/server";

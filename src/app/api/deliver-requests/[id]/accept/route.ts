@@ -18,13 +18,19 @@ export async function PUT(
     req.status = RequestStatus.ACCEPTED;
 
     // 2. Update the Delivery Status to ASSIGNED
-    deliveryStore.update(req.deliveryId, {
+    const updatedDelivery = deliveryStore.update(req.deliveryId, {
       status: DeliveryStatus.ASSIGNED,
       assignedTo: req.deliverId,
     });
 
-    // 3. Notify the deliver
-    await notificationService.notifyDeliver(req.id);
+    // 3. Notify the deliver and include the request + updated delivery so clients can react immediately
+    await notificationService.notifyDeliver(
+      req.id,
+      req.deliverId,
+      req.deliveryId,
+      req,
+      updatedDelivery,
+    );
 
     return NextResponse.json({ success: true, data: req });
   } catch (error) {
