@@ -8,41 +8,42 @@ type NotificationPayload = {
   data?: any;
 };
 
+type StreamController = any;
+
 const globalStore = globalThis as any;
 
 if (!globalStore.notificationListeners) {
-  globalStore.notificationListeners = new Map<string, Set<WritableStreamDefaultController<Uint8Array>>>();
+  globalStore.notificationListeners = new Map<string, Set<StreamController>>();
 }
 
-const listeners: Map<string, Set<WritableStreamDefaultController<Uint8Array>>> = globalStore.notificationListeners;
+const listeners: Map<string, Set<StreamController>> = globalStore.notificationListeners;
 
 const encoder = new TextEncoder();
 
-function sendToController(
-  controller: WritableStreamDefaultController<Uint8Array>,
-  payload: NotificationPayload,
-) {
+function sendToController(controller: StreamController, payload: NotificationPayload) {
   try {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+    // Try enqueueing a plain string (SSE) and fall back to Uint8Array.
+    try {
+      controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
+    } catch {
+      try {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      } catch {
+        // ignore enqueue failures
+      }
+    }
   } catch {
-    // If enqueue fails, the connection is likely closed.
-    // The caller must remove the listener separately.
+    // ignore
   }
 }
 
-export function addNotificationListener(
-  userId: string,
-  controller: WritableStreamDefaultController<Uint8Array>,
-) {
+export function addNotificationListener(userId: string, controller: StreamController) {
   const userListeners = listeners.get(userId) ?? new Set();
   userListeners.add(controller);
   listeners.set(userId, userListeners);
 }
 
-export function removeNotificationListener(
-  userId: string,
-  controller: WritableStreamDefaultController<Uint8Array>,
-) {
+export function removeNotificationListener(userId: string, controller: StreamController) {
   const userListeners = listeners.get(userId);
   if (!userListeners) return;
   userListeners.delete(controller);

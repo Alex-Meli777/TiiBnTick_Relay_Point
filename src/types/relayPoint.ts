@@ -112,6 +112,12 @@ export interface RelayPointApplication {
   description?: string;
 }
 
+export interface StoredRelayPointApplication extends RelayPointApplication {
+  id: string;
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 export interface DeliveryTrackingSession {
   id: string;
   trackingNumber: string;

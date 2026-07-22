@@ -64,7 +64,7 @@ import { Loader2 } from 'lucide-react'
 import { getRoute } from '@/services/routing'
 import { acceptDeliverRequest } from "@/services/deliveryFrontendService";
 
-export function ClientLanding() {
+function ClientLanding() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

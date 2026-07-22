@@ -1,69 +1,76 @@
-import { RelayPoint } from "@/types/relayPoint";
+import { apiFetch, unwrapData } from "@/services/packageService";
+import type {
+  ApiResponse,
+  RelayPoint,
+  RelayPointSearchQuery,
+  RelayPointSearchResult,
+  RelayPointApplication,
+} from "@/types/relayPoint";
 
-const SAMPLE_POINTS: RelayPoint[] = [
-  {
-    id: "r-1",
-    name: "Relais Centre",
-    type: "shop",
-    country: "Cameroun",
-    region: "Centre",
-    city: "Yaoundé",
-    address: "Bastos",
-    lieuDit: "Face pharmacie",
-    latitude: 3.848,
-    longitude: 11.502,
-    ownerName: "John",
-    ownerPhone: "600000000",
-    openingHours: [],
-    capacity: 50,
-    currentLoad: 12,
-    handlingFee: 500,
-    status: "active",
-  },
-  {
-    id: "r-2",
-    name: "Relais Est",
-    type: "pharmacy",
-    country: "Cameroun",
-    region: "Centre",
-    city: "Yaoundé",
-    address: "Essos",
-    lieuDit: "Camp Sic",
-    latitude: 3.854,
-    longitude: 11.51,
-    ownerName: "Jane",
-    ownerPhone: "610000000",
-    openingHours: [],
-    capacity: 30,
-    currentLoad: 5,
-    handlingFee: 600,
-    status: "active",
-  },
-  {
-    id: "r-3",
-    name: "Relais Ouest",
-    type: "kiosk",
-    country: "Cameroun",
-    region: "Centre",
-    city: "Yaoundé",
-    address: "Mokolo",
-    lieuDit: "Marché",
-    latitude: 3.842,
-    longitude: 11.494,
-    ownerName: "Paul",
-    ownerPhone: "620000000",
-    openingHours: [],
-    capacity: 20,
-    currentLoad: 18,
-    handlingFee: 300,
-    status: "active",
-  },
-];
+export async function searchRelayPoints(
+  query: RelayPointSearchQuery
+): Promise<RelayPointSearchResult[]> {
+  const params = new URLSearchParams({
+    latitude: String(query.latitude),
+    longitude: String(query.longitude),
+    radiusKm: String(query.radiusKm ?? 5),
+    onlyAvailable: String(query.onlyAvailable ?? false),
+  });
+  const res = await apiFetch<ApiResponse<RelayPointSearchResult[]>>(
+    `/api/relay-points?${params}`
+  );
+  return unwrapData(res);
+}
+
+export async function getRelayPoint(id: string): Promise<RelayPoint> {
+  const res = await apiFetch<ApiResponse<RelayPoint>>(
+    `/api/relay-points/${id}`
+  );
+  return unwrapData(res);
+}
+
+export async function createRelayPoint(
+  data: Omit<RelayPoint, "id">
+): Promise<RelayPoint> {
+  const res = await apiFetch<ApiResponse<RelayPoint>>("/api/relay-points", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return unwrapData(res);
+}
+
+export async function applyForRelayPoint(
+  data: RelayPointApplication
+): Promise<{ id: string; submittedAt: string }> {
+  const res = await apiFetch<
+    ApiResponse<{ id: string; submittedAt: string }>
+  >("/api/relay-points/apply", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return unwrapData(res);
+}
+
+export async function getRelayPointParcels(relayPointId: string) {
+  const res = await apiFetch<ApiResponse<import("@/types/relayPoint").RelayParcelEntry[]>>(
+    `/api/relay-points/${relayPointId}/parcels`
+  );
+  return unwrapData(res);
+}
+
+export async function getRelayNotifications(relayPointId: string) {
+  const res = await apiFetch<ApiResponse<import("@/types/relayPoint").RelayNotification[]>>(
+    `/api/relay-points/${relayPointId}/notifications`
+  );
+  return unwrapData(res);
+}
 
 export const relayPointService = {
   getAllRelayPoints: async (): Promise<RelayPoint[]> => {
-    // stub: return sample data
-    return Promise.resolve(SAMPLE_POINTS);
+    const res = await apiFetch<ApiResponse<RelayPoint[]>>(
+      "/api/relay-points?latitude=3.8667&longitude=11.5167&radiusKm=9999"
+    );
+    return unwrapData(res);
   },
 };
 

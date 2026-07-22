@@ -55,7 +55,7 @@ const MapLeaflet = dynamic(() => import("@/components/MapLeaflet"), {
   ),
 });
 
-export function LivreurDashboard() {
+function LivreurDashboard() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, logout } = useAuth();

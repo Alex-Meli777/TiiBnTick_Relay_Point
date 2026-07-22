@@ -40,7 +40,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { updateClient, checkEmail, checkNationalId, deleteClient } from '@/services/clientService'
 
-export function ClientProfile() {
+function ClientProfile() {
   const router = useRouter()
   const { toast } = useToast()
   const { user, login, logout, refreshUser } = useAuth()

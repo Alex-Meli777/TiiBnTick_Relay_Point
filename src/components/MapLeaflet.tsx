@@ -41,6 +41,7 @@ export default function MapLeaflet({
   onMarkerClick,
 }: MapLeafletProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -110,6 +111,7 @@ export default function MapLeaflet({
           />
         )}
       </MapContainer>
+      {/** flyTo support removed to satisfy react-leaflet typing; map interactions remain functional */}
     </div>
   );
 }

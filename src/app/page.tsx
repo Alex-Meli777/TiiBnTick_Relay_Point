@@ -39,7 +39,7 @@ export default function LandingPage() {
             <Link href="/relay-points" className="hover:text-orange-600 transition-colors">
               Trouver un Point Relais
             </Link>
-            <Link href="/become-rp" className="hover:text-orange-600 transition-colors">
+            <Link href="/relay-points/postuler" className="hover:text-orange-600 transition-colors">
               Devenir Partenaire
             </Link>
             <Link href="#features" className="hover:text-orange-600 transition-colors">
@@ -83,7 +83,7 @@ export default function LandingPage() {
               Trouver un Point Relais
             </Link>
             <Link 
-              href="/become-rp" 
+              href="/relay-points/postuler" 
               className="block text-base font-medium text-gray-700 hover:text-orange-600 py-1"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -136,7 +136,7 @@ export default function LandingPage() {
                   <MapPin className="h-5 w-5 group-hover:tranorange-x-0.5 transition-transform" />
                 </Link>
                 <Link 
-                  href="/become-rp" 
+                  href="/relay-points/postuler" 
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-orange-50 text-orange-500 border border-orange-200 font-bold px-8 py-4 rounded-2xl shadow-sm transition-all"
                 >
                   Devenir Partenaire
@@ -319,7 +319,7 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col sm:flex-row gap-4 lg:justify-end">
                 <Link 
-                  href="/become-rp" 
+                  href="/relay-points/postuler" 
                   className="bg-orange-600 hover:bg-orange-500 text-white font-bold text-center px-8 py-4 rounded-2xl transition-all shadow-lg shadow-orange-600/10"
                 >
                   Postuler maintenant
@@ -361,7 +361,7 @@ export default function LandingPage() {
           <div>
             <h4 className="text-white font-semibold text-sm mb-4">Pour les commerçants</h4>
             <ul className="space-y-2.5 text-xs">
-              <li><Link href="/become-rp" className="hover:text-orange-400 transition-colors">Devenir Point Relais</Link></li>
+              <li><Link href="/relay-points/postuler" className="hover:text-orange-400 transition-colors">Devenir Point Relais</Link></li>
               <li><Link href="/login" className="hover:text-orange-400 transition-colors">Espace Propriétaire</Link></li>
               <li><Link href="/relay-points" className="hover:text-orange-400 transition-colors">Critères de sélection</Link></li>
             </ul>

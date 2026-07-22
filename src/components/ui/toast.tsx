@@ -127,3 +127,13 @@ export {
   ToastClose,
   ToastAction,
 }
+
+export function useToast() {
+  const toast = (message: string, _type: 'success' | 'error' = 'success') => {
+    if (typeof window !== 'undefined') {
+      window.alert(message)
+    }
+  }
+
+  return { toast }
+}

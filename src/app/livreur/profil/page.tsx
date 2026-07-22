@@ -28,7 +28,7 @@ import { withAuth } from '@/components/hoc/withAuth'
 import { useAuth } from '@/context/AuthContext'
 import { updateDeliveryPerson, deleteDeliveryPerson } from '@/services/deliveryPersonService'
 
-export function LivreurProfile() {
+function LivreurProfile() {
   const router = useRouter()
   const { toast } = useToast()
   const { user, login, logout, refreshUser } = useAuth()
