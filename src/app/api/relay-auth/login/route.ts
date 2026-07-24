@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { relayOwnerCredentials } from "@/mocks/relayPointsSeed";
+import { authenticateRelayPointManager } from "@/lib/relayData";
 import { signRelayToken } from "@/lib/jwt";
 
 export async function POST(request: NextRequest) {
@@ -8,9 +8,7 @@ export async function POST(request: NextRequest) {
     const phone = String(body.phone ?? "").trim();
     const password = String(body.password ?? "");
 
-    const owner = relayOwnerCredentials.find(
-      (o) => o.phone === phone && o.password === password
-    );
+    const owner = authenticateRelayPointManager(phone, password);
 
     if (!owner) {
       return NextResponse.json(

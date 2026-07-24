@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { applyForRelayPoint } from "@/lib/relayData";
+import { applyForRelayPoint, findRelayPointManager } from "@/lib/relayData";
 import type { RelayPointApplication } from "@/types/relayPoint";
 
 function validateApplication(body: any): body is RelayPointApplication {
-  return (
+  const hasManagerIdentity =
     body?.manager?.firstName &&
     body?.manager?.lastName &&
     body?.manager?.phone &&
-    body?.manager?.email &&
-    body?.manager?.password &&
+    body?.manager?.email;
+
+  const managerExists = hasManagerIdentity
+    ? Boolean(
+        findRelayPointManager({
+          email: body.manager.email,
+          phone: body.manager.phone,
+        })
+      )
+    : false;
+
+  return (
+    hasManagerIdentity &&
+    (managerExists || body?.manager?.password) &&
     body?.businessName &&
     body?.type &&
     body?.country &&

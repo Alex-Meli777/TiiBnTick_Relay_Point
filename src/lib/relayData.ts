@@ -81,6 +81,20 @@ export function getRelayPointManagerById(id: string): RelayPointManager | undefi
   return store.relayManagers.find((manager) => manager.id === id);
 }
 
+export function getRelayManagers(): Array<Omit<RelayPointManager, "password">> {
+  return getMutableStore().relayManagers.map(({ password, ...manager }) => manager);
+}
+
+export function authenticateRelayPointManager(
+  phone: string,
+  password: string
+): RelayPointManager | undefined {
+  const store = getMutableStore();
+  return store.relayManagers.find(
+    (manager) => manager.phone === phone && manager.password === password
+  );
+}
+
 export function createRelayPointManager(
   data: Omit<RelayPointManager, "id" | "fullName" | "managedRelayPointIds">
 ): RelayPointManager {

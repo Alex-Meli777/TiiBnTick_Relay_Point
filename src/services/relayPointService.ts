@@ -77,6 +77,13 @@ export async function getRelayNotifications(relayPointId: string) {
   return unwrapData(res);
 }
 
+export async function getRelayManagers() {
+  const res = await apiFetch<ApiResponse<Array<Omit<import("@/types/relayPoint").RelayPointManager, "password">>>>(
+    "/api/relay-managers"
+  );
+  return unwrapData(res);
+}
+
 export const relayPointService = {
   getAllRelayPoints: async (): Promise<RelayPoint[]> => {
     const res = await apiFetch<ApiResponse<RelayPoint[]>>(

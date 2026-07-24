@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyRelayToken } from "@/lib/jwt";
-import { getRelayPointById } from "@/lib/relayData";
+import { getRelayPointById, findRelayPointManager } from "@/lib/relayData";
 
 export async function GET() {
   const token = cookies().get("relay_auth_token")?.value;
@@ -14,10 +14,10 @@ export async function GET() {
 
   try {
     const payload = await verifyRelayToken(token);
-    const relayPointId = payload.managedRelayPointIds[0];
-    const relayPoint = relayPointId
-      ? getRelayPointById(relayPointId)
-      : undefined;
+    const relayPoints = payload.managedRelayPointIds
+      .map(getRelayPointById)
+      .filter(Boolean);
+    const manager = findRelayPointManager({ phone: payload.phone });
 
     return NextResponse.json({
       success: true,
@@ -25,8 +25,9 @@ export async function GET() {
         id: payload.sub,
         fullName: payload.fullName,
         phone: payload.phone,
+        email: manager?.email,
         managedRelayPointIds: payload.managedRelayPointIds,
-        relayPoint,
+        relayPoints,
       },
     });
   } catch {

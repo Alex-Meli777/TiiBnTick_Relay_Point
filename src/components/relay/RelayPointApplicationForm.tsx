@@ -1,9 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle, ArrowRight, ArrowLeft, MapPin } from "lucide-react";
-import type { RelayPointApplication } from "@/types/relayPoint";
+import type { RelayPointApplication, RelayPointManager } from "@/types/relayPoint";
 import { RELAY_POINT_TYPE_LABELS, DAY_LABELS } from "@/types/relayPoint";
 import { CustomInput } from "@/components/ui/CustomInput";
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -27,7 +27,12 @@ type RelayPointApplicationFormProps = {
   successTitle?: string;
   successDescription?: string;
   onSuccess?: () => void;
+  defaultManager?: RelayPointApplication["manager"];
+  skipManagerStep?: boolean;
+  existingManagers?: Array<Pick<RelayPointManager, "id" | "firstName" | "lastName" | "phone" | "email">>;
 };
+
+type RelayPointApplicationOpeningHour = NonNullable<RelayPointApplication["openingHours"]>[number];
 
 const defaultOpeningHours: RelayPointApplication["openingHours"] = [
   { day: "mon", open: "08:00", close: "18:00" },
@@ -45,22 +50,25 @@ export default function RelayPointApplicationForm({
   successTitle = "Candidature envoyée",
   successDescription = "Nous avons bien reçu votre demande. Notre équipe vous contactera rapidement.",
   onSuccess,
+  defaultManager,
+  skipManagerStep = false,
+  existingManagers,
 }: RelayPointApplicationFormProps) {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(skipManagerStep ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [mapSelection, setMapSelection] = useState({ latitude: 3.87, longitude: 11.52 });
-  const [photoFrontUrl, setPhotoFrontUrl] = useState("");
-  const [photoBackUrl, setPhotoBackUrl] = useState("");
-  const [photoFrontFile, setPhotoFrontFile] = useState<File | null>(null);
-  const [photoBackFile, setPhotoBackFile] = useState<File | null>(null);
-  const [photoFrontPreview, setPhotoFrontPreview] = useState<string>("");
-  const [photoBackPreview, setPhotoBackPreview] = useState<string>("");
+  const [selectedManagerId, setSelectedManagerId] = useState<string | null>(
+    existingManagers?.[0]?.id ?? null
+  );
+  const [managerSelectionMode, setManagerSelectionMode] = useState<
+    "new" | "existing"
+  >(existingManagers?.length ? "existing" : "new");
 
   const [form, setForm] = useState<RelayPointApplication>({
-    manager: {
+    manager: defaultManager ?? {
       firstName: "",
       lastName: "",
       phone: "",
@@ -82,11 +90,41 @@ export default function RelayPointApplicationForm({
     description: "",
     photos: [],
   });
+  const [photoFrontUrl, setPhotoFrontUrl] = useState("");
+  const [photoBackUrl, setPhotoBackUrl] = useState("");
+  const [photoFrontFile, setPhotoFrontFile] = useState<File | null>(null);
+  const [photoBackFile, setPhotoBackFile] = useState<File | null>(null);
+  const [photoFrontPreview, setPhotoFrontPreview] = useState<string>("");
+  const [photoBackPreview, setPhotoBackPreview] = useState<string>("");
 
   const cities = useMemo(
     () => CAMEROON_CITIES[form.region] ?? [],
     [form.region]
   );
+
+  useEffect(() => {
+    if (defaultManager) {
+      setForm((current) => ({
+        ...current,
+        manager: {
+          ...current.manager,
+          ...defaultManager,
+        },
+      }));
+    }
+  }, [defaultManager]);
+
+  useEffect(() => {
+    if (existingManagers?.length && !selectedManagerId) {
+      setSelectedManagerId(existingManagers[0].id);
+    }
+  }, [existingManagers, selectedManagerId]);
+
+  useEffect(() => {
+    if (skipManagerStep) {
+      setStep(2);
+    }
+  }, [skipManagerStep]);
 
   function updateManager<K extends keyof RelayPointApplication["manager"]>(
     key: K,
@@ -108,7 +146,7 @@ export default function RelayPointApplicationForm({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function updateOpeningHour(day: RelayPointApplication["openingHours"][number]["day"], key: "open" | "close", value: string) {
+  function updateOpeningHour(day: RelayPointApplicationOpeningHour["day"], key: "open" | "close", value: string) {
     setForm((current) => ({
       ...current,
       openingHours: current.openingHours?.map((entry) =>
@@ -117,10 +155,25 @@ export default function RelayPointApplicationForm({
     }));
   }
 
+  const selectedExistingManager = selectedManagerId
+    ? existingManagers?.find((manager) => manager.id === selectedManagerId)
+    : undefined;
+
+  const summaryManager = skipManagerStep
+    ? form.manager
+    : managerSelectionMode === "existing" && selectedExistingManager
+    ? {
+        firstName: selectedExistingManager.firstName,
+        lastName: selectedExistingManager.lastName,
+        phone: selectedExistingManager.phone,
+        email: selectedExistingManager.email,
+      }
+    : form.manager;
+
   const summaryItems = [
-    { label: "Manager", value: `${form.manager.firstName} ${form.manager.lastName}` },
-    { label: "Téléphone", value: form.manager.phone },
-    { label: "Email", value: form.manager.email },
+    { label: "Manager", value: `${summaryManager.firstName} ${summaryManager.lastName}` },
+    { label: "Téléphone", value: summaryManager.phone },
+    { label: "Email", value: summaryManager.email },
     { label: "Nom du point relais", value: form.businessName },
     { label: "Type", value: RELAY_POINT_TYPE_LABELS[form.type] },
     { label: "Adresse", value: `${form.address}, ${form.lieuDit}`.trim() },
@@ -134,10 +187,24 @@ export default function RelayPointApplicationForm({
     event.preventDefault();
     setLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         ...form,
         photos: [photoFrontUrl.trim(), photoBackUrl.trim()].filter(Boolean),
       };
+
+      if (managerSelectionMode === "existing" && selectedManagerId) {
+        payload.managerId = selectedManagerId;
+        const existing = existingManagers?.find((m) => m.id === selectedManagerId);
+        if (existing) {
+          payload.manager = {
+            firstName: existing.firstName,
+            lastName: existing.lastName,
+            phone: existing.phone,
+            email: existing.email,
+            password: "",
+          };
+        }
+      }
 
       const response = await fetch(submitUrl, {
         method: "POST",
@@ -164,6 +231,18 @@ export default function RelayPointApplicationForm({
   }
 
   function validateStep1() {
+    if (skipManagerStep) {
+      return true;
+    }
+
+    if (existingManagers?.length && managerSelectionMode === "existing") {
+      if (!selectedManagerId) {
+        toast("Choisissez un gestionnaire existant.", "error");
+        return false;
+      }
+      return true;
+    }
+
     const m = form.manager;
     if (!m.firstName?.trim() || !m.lastName?.trim() || !m.phone?.trim() || !m.email?.trim() || !m.password?.trim()) {
       toast("Veuillez renseigner toutes les informations du gestionnaire.", "error");
@@ -172,11 +251,37 @@ export default function RelayPointApplicationForm({
     return true;
   }
 
+  function validateStep2() {
+    if (!form.businessName?.trim()) {
+      toast("Le nom du point relais est requis.", "error");
+      return false;
+    }
+    if (!form.address?.trim() || !form.city?.trim() || !form.region?.trim()) {
+      toast("Veuillez renseigner l'adresse complète du point relais.", "error");
+      return false;
+    }
+    if (!form.latitude || !form.longitude) {
+      toast("Veuillez définir les coordonnées géographiques du point relais.", "error");
+      return false;
+    }
+    if (!form.capacity || form.capacity <= 0) {
+      toast("La capacité du point relais doit être un nombre positif.", "error");
+      return false;
+    }
+    if (!form.handlingFee || form.handlingFee < 0) {
+      toast("Le frais de manutention doit être une valeur positive.", "error");
+      return false;
+    }
+    return true;
+  }
+
   function handleNext(e?: React.MouseEvent) {
     e?.preventDefault();
-    // Validate step 1 -> step 2
     if (step === 1) {
       if (!validateStep1()) return;
+    }
+    if (step === 2) {
+      if (!validateStep2()) return;
     }
     setStep((s) => Math.min(3, s + 1));
   }
@@ -192,8 +297,11 @@ export default function RelayPointApplicationForm({
     setLocationModalOpen(false);
   }
 
+  const totalStepCount = skipManagerStep ? 2 : 3;
+  const visibleStep = skipManagerStep ? step - 1 : step;
+
   function renderStep() {
-    if (step === 1) {
+    if (step === 1 && !skipManagerStep) {
       return (
         <div className="space-y-6">
           <div className="space-y-3 rounded-3xl border border-orange-100 bg-orange-50/80 p-5">
@@ -202,47 +310,102 @@ export default function RelayPointApplicationForm({
             <p className="text-sm text-gray-600">Renseignez les informations du manager qui sera lié au point relais.</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CustomInput
-              label="Prénom"
-              required
-              value={form.manager.firstName}
-              onChange={(e) => updateManager("firstName", e.target.value)}
-            />
-            <CustomInput
-              label="Nom"
-              required
-              value={form.manager.lastName}
-              onChange={(e) => updateManager("lastName", e.target.value)}
-            />
-          </div>
+          {existingManagers?.length ? (
+            <div className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setManagerSelectionMode("existing")}
+                  className={`rounded-3xl px-4 py-2 text-sm font-semibold ${managerSelectionMode === "existing" ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-700"}`}
+                >
+                  Choisir un gestionnaire existant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagerSelectionMode("new")}
+                  className={`rounded-3xl px-4 py-2 text-sm font-semibold ${managerSelectionMode === "new" ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-700"}`}
+                >
+                  Créer un nouveau gestionnaire
+                </button>
+              </div>
+            </div>
+          ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CustomInput
-              label="Téléphone"
-              type="tel"
-              required
-              value={form.manager.phone}
-              onChange={(e) => updateManager("phone", e.target.value)}
-              placeholder="+2376XXXXXXXX"
-            />
-            <CustomInput
-              label="Email"
-              type="email"
-              required
-              value={form.manager.email}
-              onChange={(e) => updateManager("email", e.target.value)}
-            />
-          </div>
+          {existingManagers?.length && managerSelectionMode === "existing" ? (
+            <div className="space-y-4 rounded-3xl border border-gray-200 bg-gray-50 p-4">
+              <label className="text-sm font-medium text-gray-700">Gestionnaire existant</label>
+              <select
+                value={selectedManagerId ?? ""}
+                onChange={(e) => setSelectedManagerId(e.target.value)}
+                className="w-full rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm"
+              >
+                {existingManagers.map((manager) => (
+                  <option key={manager.id} value={manager.id}>
+                    {manager.firstName} {manager.lastName} — {manager.phone}
+                  </option>
+                ))}
+              </select>
+              {selectedManagerId ? (
+                <div className="rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-700">
+                  {(() => {
+                    const manager = existingManagers.find((m) => m.id === selectedManagerId);
+                    if (!manager) return null;
+                    return (
+                      <>
+                        <p className="font-semibold text-gray-900">{manager.firstName} {manager.lastName}</p>
+                        <p>Téléphone : {manager.phone}</p>
+                        <p>Email : {manager.email}</p>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CustomInput
+                  label="Prénom"
+                  required
+                  value={form.manager.firstName}
+                  onChange={(e) => updateManager("firstName", e.target.value)}
+                />
+                <CustomInput
+                  label="Nom"
+                  required
+                  value={form.manager.lastName}
+                  onChange={(e) => updateManager("lastName", e.target.value)}
+                />
+              </div>
 
-          <CustomInput
-            label="Mot de passe"
-            type="password"
-            required
-            value={form.manager.password}
-            onChange={(e) => updateManager("password", e.target.value)}
-            hint="Ce mot de passe servira au login du gestionnaire après validation."
-          />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CustomInput
+                  label="Téléphone"
+                  type="tel"
+                  required
+                  value={form.manager.phone}
+                  onChange={(e) => updateManager("phone", e.target.value)}
+                  placeholder="+2376XXXXXXXX"
+                />
+                <CustomInput
+                  label="Email"
+                  type="email"
+                  required
+                  value={form.manager.email}
+                  onChange={(e) => updateManager("email", e.target.value)}
+                />
+              </div>
+
+              <CustomInput
+                label="Mot de passe"
+                type="password"
+                required
+                value={form.manager.password}
+                onChange={(e) => updateManager("password", e.target.value)}
+                hint="Ce mot de passe servira au login du gestionnaire après validation."
+              />
+            </>
+          )}
         </div>
       );
     }
@@ -251,7 +414,7 @@ export default function RelayPointApplicationForm({
       return (
         <div className="space-y-6">
           <div className="space-y-3 rounded-3xl border border-orange-100 bg-orange-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape 2</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape {visibleStep}</p>
             <h2 className="text-xl font-bold text-gray-900">Informations du point relais</h2>
             <p className="text-sm text-gray-600">Complétez l’adresse, la capacité, les horaires et la présentation du projet.</p>
           </div>
@@ -448,7 +611,7 @@ export default function RelayPointApplicationForm({
     return (
       <div className="space-y-6">
         <div className="space-y-3 rounded-3xl border border-orange-100 bg-orange-50/80 p-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape 3</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape {visibleStep}</p>
           <h2 className="text-xl font-bold text-gray-900">Résumé et validation</h2>
           <p className="text-sm text-gray-600">Vérifiez toutes les informations avant d’envoyer votre demande.</p>
         </div>
@@ -490,7 +653,7 @@ export default function RelayPointApplicationForm({
           <p className="mt-2 text-lg font-bold text-gray-900">Devenir point relais</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="font-semibold text-orange-700">Étape {step}/3</span>
+          <span className="font-semibold text-orange-700">Étape {visibleStep}/{totalStepCount}</span>
         </div>
       </div>
 

@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Shield, Lock } from "lucide-react";
-import type { RelayPoint, StoredRelayPointApplication } from "@/types/relayPoint";
+import type { RelayPoint, StoredRelayPointApplication, RelayPointManager } from "@/types/relayPoint";
 import type { RelayPointDetail } from "@/services/relayPointService";
 import { RELAY_POINT_TYPE_LABELS } from "@/types/relayPoint";
-import { getRelayPointDetail } from "@/services/relayPointService";
+import { getRelayPointDetail, getRelayManagers } from "@/services/relayPointService";
+import RelayPointApplicationForm from "@/components/relay/RelayPointApplicationForm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -497,6 +498,7 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
   const [applications, setApplications] = useState<StoredRelayPointApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+  const [expandedApplicationId, setExpandedApplicationId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -543,9 +545,13 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Candidatures</h2>
-        <div className="flex gap-2">
-          {(["pending", "approved", "rejected", "all"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1.5 rounded-lg transition ${filter === f ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+        <div className="flex gap-2 flex-wrap">
+          {(["pending", "approved", "rejected", "all"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition ${filter === f ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            >
               {f === "pending" ? "En attente" : f === "approved" ? "Approuvées" : f === "rejected" ? "Refusées" : "Toutes"}
             </button>
           ))}
@@ -563,29 +569,112 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
       )}
 
       <div className="grid gap-4">
-        {applications.map(a => (
-          <div key={a.id} className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-gray-800">{a.businessName}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${a.status === "pending" ? "bg-yellow-100 text-yellow-700" : a.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {a.status === "pending" ? "En attente" : a.status === "approved" ? "Approuvée" : "Refusée"}
-                  </span>
+        {applications.map((a) => {
+          const isExpanded = expandedApplicationId === a.id;
+          return (
+            <div key={a.id} className="rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+              <button
+                type="button"
+                onClick={() => setExpandedApplicationId(isExpanded ? null : a.id)}
+                className="w-full text-left p-5"
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-lg font-semibold text-gray-900 truncate">{a.businessName}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${a.status === "pending" ? "bg-yellow-100 text-yellow-700" : a.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        {a.status === "pending" ? "En attente" : a.status === "approved" ? "Approuvée" : "Refusée"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">{RELAY_POINT_TYPE_LABELS[a.type]} · {a.address}, {a.city}</p>
+                    <p className="mt-2 text-sm text-gray-500">Demande par {a.manager.firstName} {a.manager.lastName} · {a.manager.phone}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-gray-400">Soumis le {new Date(a.submittedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                      {isExpanded ? "Réduire" : "Voir détails"}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">👤 {a.manager.firstName} {a.manager.lastName} · 📞 {a.manager.phone}</p>
-                <p className="text-sm text-gray-500">{a.address}, {a.city} ({a.region}) · {RELAY_POINT_TYPE_LABELS[a.type]}</p>
-                <p className="text-xs text-gray-400 mt-1">Soumis le {new Date(a.submittedAt).toLocaleDateString("fr-FR")} · ID : {a.id}</p>
-              </div>
-              {a.status === "pending" && (
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleApprove(a.id)} className="text-sm bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1.5 rounded-lg transition">✅ Autoriser</button>
-                  <button onClick={() => handleReject(a.id)} className="text-sm bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1.5 rounded-lg transition">❌ Refuser</button>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-gray-100 px-5 py-5 text-sm text-gray-700">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Détails du gestionnaire</h3>
+                      <p><span className="font-medium">Nom :</span> {a.manager.firstName} {a.manager.lastName}</p>
+                      <p><span className="font-medium">Téléphone :</span> {a.manager.phone}</p>
+                      <p><span className="font-medium">Email :</span> {a.manager.email}</p>
+                    </div>
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Adresse du point</h3>
+                      <p><span className="font-medium">Type :</span> {RELAY_POINT_TYPE_LABELS[a.type]}</p>
+                      <p><span className="font-medium">Adresse :</span> {a.address}</p>
+                      <p><span className="font-medium">Complément :</span> {a.lieuDit || "—"}</p>
+                      <p><span className="font-medium">Localité :</span> {a.city}, {a.region}, {a.country}</p>
+                      <p><span className="font-medium">Coordonnées :</span> {a.latitude}, {a.longitude}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Conditions d’exploitation</h3>
+                      <p><span className="font-medium">Capacité :</span> {a.capacity} colis</p>
+                      <p><span className="font-medium">Frais :</span> {a.handlingFee} FCFA</p>
+                      {a.description ? <p className="mt-3"><span className="font-medium">Description :</span> {a.description}</p> : null}
+                    </div>
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Horaires</h3>
+                      {a.openingHours?.length ? (
+                        <ul className="space-y-2">
+                          {a.openingHours.map((slot) => (
+                            <li key={slot.day} className="flex justify-between border-b border-gray-200 pb-1">
+                              <span className="capitalize">{slot.day}</span>
+                              <span>{slot.open} — {slot.close}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-500">Aucun horaire fourni.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {a.photos?.length ? (
+                    <div className="mt-5 rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Photos</h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {a.photos.map((photo, index) => (
+                          <img key={index} src={photo} alt={`Photo ${index + 1}`} className="h-40 w-full rounded-2xl object-cover" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                    {a.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleReject(a.id)}
+                          className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                        >
+                          ❌ Refuser
+                        </button>
+                        <button
+                          onClick={() => handleApprove(a.id)}
+                          className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition"
+                        >
+                          ✅ Approuver
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -594,118 +683,52 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
 // ─── Onglet : Créer un point relais ──────────────────────────────────────────
 
 function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success" | "error") => void; onCreated: () => void }) {
-  const [form, setForm] = useState({
-    name: "", type: "shop", country: "Cameroun", region: "", city: "",
-    address: "", lieuDit: "", latitude: "", longitude: "",
-    ownerName: "", ownerPhone: "", capacity: "", handlingFee: "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [mapSelection, setMapSelection] = useState({ latitude: 3.87, longitude: 11.52 });
-  const [photoFrontUrl, setPhotoFrontUrl] = useState("");
-  const [photoBackUrl, setPhotoBackUrl] = useState("");
+  const [managers, setManagers] = useState<Array<Pick<RelayPointManager, "id" | "firstName" | "lastName" | "phone" | "email">>>([]);
+  const [loadingManagers, setLoadingManagers] = useState(true);
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const res = await fetch("/api/relay-points", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          latitude: Number(form.latitude),
-          longitude: Number(form.longitude),
-          capacity: Number(form.capacity),
-          handlingFee: Number(form.handlingFee),
-          currentLoad: 0,
-          status: "active",
-          openingHours: [
-            { day: "mon", open: "08:00", close: "18:00" },
-            { day: "tue", open: "08:00", close: "18:00" },
-            { day: "wed", open: "08:00", close: "18:00" },
-            { day: "thu", open: "08:00", close: "18:00" },
-            { day: "fri", open: "08:00", close: "18:00" },
-            { day: "sat", open: "09:00", close: "13:00" },
-            { day: "sun", open: "00:00", close: "00:00" },
-          ],
-          photos: [photoFrontUrl.trim(), photoBackUrl.trim()].filter(Boolean),
-        }),
+  useEffect(() => {
+    let mounted = true;
+    getRelayManagers()
+      .then((list) => {
+        if (!mounted) return;
+        setManagers(list.map((manager) => ({
+          id: manager.id,
+          firstName: manager.firstName,
+          lastName: manager.lastName,
+          phone: manager.phone,
+          email: manager.email,
+        })));
+      })
+      .finally(() => {
+        if (mounted) setLoadingManagers(false);
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Point relais "${data.data.name}" créé avec succès !`, "success");
-        onCreated();
-      } else {
-        showToast(data.error ?? "Erreur lors de la création", "error");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const input = (label: string, k: string, type = "text", placeholder = "") => (
-    <div>
-      <label className="text-sm text-gray-600 mb-1 block">{label}</label>
-      <input type={type} value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)} placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-    </div>
-  );
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Créer un nouveau point relais</h2>
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-
-        <div className="grid grid-cols-2 gap-4">
-          {input("Nom du point relais *", "name", "text", "ex: Boutique Mama Ngo")}
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Type *</label>
-            <select value={form.type} onChange={e => set("type", e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-              <option value="shop">Boutique</option>
-              <option value="pharmacy">Pharmacie</option>
-              <option value="kiosk">Kiosque</option>
-              <option value="official_agency">Agence officielle</option>
-            </select>
-          </div>
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">Créer un nouveau point relais</h2>
+      <p className="mb-6 text-sm text-gray-500">
+        Créez un point relais pour un gestionnaire existant ou ajoutez un nouveau manager directement depuis l’espace admin.
+      </p>
+      {loadingManagers ? (
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
+          Chargement des gestionnaires...
         </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          {input("Pays *", "country", "text", "Cameroun")}
-          {input("Région *", "region", "text", "ex: Centre")}
-          {input("Ville *", "city", "text", "ex: Yaoundé")}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {input("Adresse *", "address", "text", "ex: Rue de la Paix")}
-          {input("Lieu-dit", "lieuDit", "text", "ex: Face à la station Total")}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {input("Latitude *", "latitude", "number", "ex: 3.8667")}
-          {input("Longitude *", "longitude", "number", "ex: 11.5167")}
-        </div>
-
-        <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
-          {input("Nom du propriétaire *", "ownerName", "text", "ex: Jean Dupont")}
-          {input("Téléphone *", "ownerPhone", "tel", "ex: +237699000000")}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {input("Capacité (colis) *", "capacity", "number", "ex: 20")}
-          {input("Frais de manutention (FCFA) *", "handlingFee", "number", "ex: 500")}
-        </div>
-
-        <div className="bg-orange-50 rounded-lg px-4 py-3 text-sm text-orange-700">
-          ℹ️ Les horaires d'ouverture seront définis par défaut (Lun-Ven 8h-18h, Sam 9h-13h).
-        </div>
-
-        <button type="submit" disabled={saving} className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-xl py-3 font-semibold transition disabled:opacity-50">
-          {saving ? "Création en cours..." : "Créer le point relais"}
-        </button>
-      </form>
+      ) : null}
+      <RelayPointApplicationForm
+        submitUrl="/api/relay-points"
+        submitLabel="Créer le point relais"
+        successTitle="Point relais créé"
+        successDescription="Le point relais a été créé et lié au gestionnaire."
+        existingManagers={managers}
+        onSuccess={() => {
+          showToast("Point relais créé avec succès !", "success");
+          onCreated();
+        }}
+      />
     </div>
   );
 }

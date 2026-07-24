@@ -42,6 +42,9 @@ export default function LandingPage() {
             <Link href="/relay-points/postuler" className="hover:text-orange-600 transition-colors">
               Devenir Partenaire
             </Link>
+            <Link href="/rp-manager/login" className="hover:text-orange-600 transition-colors">
+              Espace partenaire
+            </Link>
             <Link href="#features" className="hover:text-orange-600 transition-colors">
               Fonctionnalités
             </Link>
@@ -88,6 +91,13 @@ export default function LandingPage() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Devenir Partenaire
+            </Link>
+            <Link 
+              href="/rp-manager/login" 
+              className="block text-base font-medium text-gray-700 hover:text-orange-600 py-1"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Espace partenaire
             </Link>
             <div className="border-t border-orange-100 pt-4 flex flex-col gap-2">
               <Link 
@@ -362,7 +372,7 @@ export default function LandingPage() {
             <h4 className="text-white font-semibold text-sm mb-4">Pour les commerçants</h4>
             <ul className="space-y-2.5 text-xs">
               <li><Link href="/relay-points/postuler" className="hover:text-orange-400 transition-colors">Devenir Point Relais</Link></li>
-              <li><Link href="/login" className="hover:text-orange-400 transition-colors">Espace Propriétaire</Link></li>
+              <li><Link href="/rp-manager/login" className="hover:text-orange-400 transition-colors">Espace Propriétaire</Link></li>
               <li><Link href="/relay-points" className="hover:text-orange-400 transition-colors">Critères de sélection</Link></li>
             </ul>
           </div>

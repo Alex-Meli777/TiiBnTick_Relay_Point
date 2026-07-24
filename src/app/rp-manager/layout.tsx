@@ -97,13 +97,14 @@ export default function RelayDashboardLayout({
               </Link>
             ))}
           </nav>
+
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-6 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             <LogOut className="h-4 w-4" />
-            Déconnexion
+            Se déconnecter
           </button>
         </aside>
 
@@ -121,14 +122,6 @@ export default function RelayDashboardLayout({
             {item.label.split(" ")[0]}
           </Link>
         ))}
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex flex-1 flex-col items-center gap-1 py-3 text-xs text-gray-500"
-        >
-          <LayoutDashboard className="h-5 w-5" />
-          Quitter
-        </button>
       </nav>
     </div>
   );
