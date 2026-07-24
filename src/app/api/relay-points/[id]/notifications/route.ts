@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyRelayToken } from "@/lib/jwt";
-import { getNotificationsForRelay } from "@/lib/relayData";
+import { getNotificationsForRelay, findRelayPointManager } from "@/lib/relayData";
 import { cookies } from "next/headers";
 
 export async function GET(
@@ -17,7 +17,8 @@ export async function GET(
 
   try {
     const payload = await verifyRelayToken(token);
-    if (!payload.managedRelayPointIds.includes(params.id)) {
+    const manager = findRelayPointManager({ phone: payload.phone });
+    if (!manager || !manager.managedRelayPointIds.includes(params.id)) {
       return NextResponse.json(
         { success: false, error: "Accès refusé" },
         { status: 403 }

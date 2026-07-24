@@ -94,7 +94,7 @@ export default function RelayPointsPage() {
             href="/"
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:border-orange-300 hover:text-orange-700"
           >
-            Retour
+            ← Retour
           </Link>
           <Link
             href="/relay-points/postuler"

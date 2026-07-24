@@ -4,6 +4,7 @@ import {
   getRelayPointById,
   getParcelsByRelayPoint,
   getNotificationsForRelay,
+  findRelayPointManager,
 } from "@/lib/relayData";
 import { cookies } from "next/headers";
 
@@ -14,7 +15,9 @@ async function getOwnerRelayId(
   if (!token) return false;
   try {
     const payload = await verifyRelayToken(token);
-    return payload.managedRelayPointIds.includes(relayPointId);
+    const manager = findRelayPointManager({ phone: payload.phone });
+    if (!manager) return false;
+    return manager.managedRelayPointIds.includes(relayPointId);
   } catch {
     return false;
   }

@@ -14,19 +14,28 @@ export async function GET() {
 
   try {
     const payload = await verifyRelayToken(token);
-    const relayPoints = payload.managedRelayPointIds
+    // Fetch the manager's current state from the store instead of using the token snapshot
+    // This ensures newly approved relay points (linked after login) are returned immediately
+    const manager = findRelayPointManager({ phone: payload.phone });
+    if (!manager) {
+      return NextResponse.json(
+        { success: false, error: "Gestionnaire non trouvé" },
+        { status: 401 }
+      );
+    }
+
+    const relayPoints = (manager.managedRelayPointIds || [])
       .map(getRelayPointById)
       .filter(Boolean);
-    const manager = findRelayPointManager({ phone: payload.phone });
 
     return NextResponse.json({
       success: true,
       data: {
-        id: payload.sub,
-        fullName: payload.fullName,
-        phone: payload.phone,
-        email: manager?.email,
-        managedRelayPointIds: payload.managedRelayPointIds,
+        id: manager.id,
+        fullName: manager.fullName,
+        phone: manager.phone,
+        email: manager.email,
+        managedRelayPointIds: manager.managedRelayPointIds || [],
         relayPoints,
       },
     });
