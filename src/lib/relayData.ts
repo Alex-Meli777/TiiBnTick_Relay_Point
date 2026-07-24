@@ -2,6 +2,7 @@ import { getMutableStore } from "@/mocks/relayPointsSeed";
 import { calculateDistanceKm, generateId } from "@/lib/utils";
 import type {
   RelayPoint,
+  RelayPointManager,
   RelayPointSearchQuery,
   RelayPointSearchResult,
   RelayPointApplication,
@@ -55,9 +56,43 @@ export function createRelayPoint(
   data: Omit<RelayPoint, "id" | "status"> & Partial<Pick<RelayPoint, "status">>
 ): RelayPoint {
   const store = getMutableStore();
-  const point: RelayPoint = { ...data, id: generateId("rp"), status: data.status ?? "active" } as RelayPoint;
+  const point: RelayPoint = {
+    ...data,
+    id: generateId("rp"),
+    status: data.status ?? "active",
+  } as RelayPoint;
   store.relayPoints.push(point);
   return point;
+}
+
+export function findRelayPointManager(
+  criteria: Partial<Pick<RelayPointManager, "email" | "phone">>
+): RelayPointManager | undefined {
+  const store = getMutableStore();
+  return store.relayManagers.find(
+    (manager) =>
+      (criteria.email && manager.email === criteria.email) ||
+      (criteria.phone && manager.phone === criteria.phone)
+  );
+}
+
+export function getRelayPointManagerById(id: string): RelayPointManager | undefined {
+  const store = getMutableStore();
+  return store.relayManagers.find((manager) => manager.id === id);
+}
+
+export function createRelayPointManager(
+  data: Omit<RelayPointManager, "id" | "fullName" | "managedRelayPointIds">
+): RelayPointManager {
+  const store = getMutableStore();
+  const manager: RelayPointManager = {
+    id: generateId("mgr"),
+    fullName: `${data.firstName} ${data.lastName}`,
+    managedRelayPointIds: [],
+    ...data,
+  } as RelayPointManager;
+  store.relayManagers.push(manager);
+  return manager;
 }
 
 export function applyForRelayPoint(
@@ -136,8 +171,19 @@ export function approveApplication(
   const application = store.applications.find((a) => a.id === id);
   if (!application || application.status !== "pending") return null;
 
-  const point: RelayPoint = {
-    id: generateId("rp"),
+  const managerData = application.manager;
+  let manager = findRelayPointManager({ email: managerData.email, phone: managerData.phone });
+  if (!manager) {
+    manager = createRelayPointManager({
+      firstName: managerData.firstName,
+      lastName: managerData.lastName,
+      phone: managerData.phone,
+      email: managerData.email,
+      password: managerData.password,
+    });
+  }
+
+  const point: RelayPoint = createRelayPoint({
     name: application.businessName,
     type: application.type,
     country: application.country,
@@ -145,19 +191,23 @@ export function approveApplication(
     city: application.city,
     address: application.address,
     lieuDit: application.lieuDit,
-    latitude: overrides?.latitude ?? 0,
-    longitude: overrides?.longitude ?? 0,
-    ownerName: application.applicantName,
-    ownerPhone: application.applicantPhone,
-    ownerEmail: application.applicantEmail,
-    openingHours: overrides?.openingHours ?? DEFAULT_OPENING_HOURS,
-    capacity: overrides?.capacity ?? 20,
+    latitude: overrides?.latitude ?? application.latitude,
+    longitude: overrides?.longitude ?? application.longitude,
+    ownerName: `${manager.firstName} ${manager.lastName}`,
+    ownerPhone: manager.phone,
+    ownerEmail: manager.email,
+    openingHours: overrides?.openingHours ?? application.openingHours ?? DEFAULT_OPENING_HOURS,
+    capacity: overrides?.capacity ?? application.capacity,
     currentLoad: 0,
-    handlingFee: overrides?.handlingFee ?? 500,
+    handlingFee: overrides?.handlingFee ?? application.handlingFee,
     status: "active",
-  };
+    managerId: manager.id,
+  });
 
-  store.relayPoints.push(point);
+  if (!manager.managedRelayPointIds.includes(point.id)) {
+    manager.managedRelayPointIds.push(point.id);
+  }
+
   application.status = "approved";
   return point;
 }

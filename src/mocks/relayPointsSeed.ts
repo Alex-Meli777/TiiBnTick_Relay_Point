@@ -1,5 +1,6 @@
 import type {
   RelayPoint,
+  RelayPointManager,
   RelayParcelEntry,
   HandoverEvent,
   RelayNotification,
@@ -270,30 +271,32 @@ export const initialNotifications: RelayNotification[] = [
 
 export const initialTrackingSessions: DeliveryTrackingSession[] = [];
 
-export interface RelayOwnerCredential {
-  id: string;
-  fullName: string;
-  phone: string;
-  password: string;
-  managedRelayPointIds: string[];
-}
+export interface RelayOwnerCredential extends RelayPointManager {}
 
-export const relayOwnerCredentials: RelayOwnerCredential[] = [
+export const relayManagers: RelayPointManager[] = [
   {
     id: "owner-001",
+    firstName: "Mama",
+    lastName: "Ngo",
     fullName: "Mama Ngo",
     phone: "+237699999999",
+    email: "mama.ngo@relay.cm",
     password: "123456",
     managedRelayPointIds: ["rp-dla-001"],
   },
   {
     id: "owner-002",
+    firstName: "Jean-Paul",
+    lastName: "Mbarga",
     fullName: "Jean-Paul Mbarga",
     phone: "+237655887766",
+    email: "jp.mbarga@relay.cm",
     password: "123456",
     managedRelayPointIds: ["rp-dla-003"],
   },
 ];
+
+export const relayOwnerCredentials = relayManagers;
 
 /** Store en mémoire — lu/écrit par les route handlers */
 export const relayStore = {
@@ -303,6 +306,7 @@ export const relayStore = {
   notifications: [...initialNotifications] as RelayNotification[],
   trackingSessions: [...initialTrackingSessions] as DeliveryTrackingSession[],
   applications: [] as StoredRelayPointApplication[],
+  relayManagers: [...relayManagers] as RelayPointManager[],
 };
 
 const globalStore = globalThis as unknown as { __relaySeedStore?: typeof relayStore };

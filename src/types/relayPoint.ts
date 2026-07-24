@@ -1,3 +1,16 @@
+export interface RelayPointManager {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  password: string;
+  managedRelayPointIds: string[];
+}
+
+export type RelayOwnerCredential = RelayPointManager;
+
 export interface RelayPoint {
   id: string;
   name: string;
@@ -12,6 +25,7 @@ export interface RelayPoint {
   ownerName: string;
   ownerPhone: string;
   ownerEmail?: string;
+  managerId?: string;
   openingHours: {
     day: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
     open: string;
@@ -99,9 +113,13 @@ export interface RelayNotification {
 }
 
 export interface RelayPointApplication {
-  applicantName: string;
-  applicantPhone: string;
-  applicantEmail?: string;
+  manager: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    password: string;
+  };
   businessName: string;
   type: RelayPoint["type"];
   country: string;
@@ -109,7 +127,13 @@ export interface RelayPointApplication {
   city: string;
   address: string;
   lieuDit: string;
+  latitude: number;
+  longitude: number;
+  openingHours?: RelayPoint["openingHours"];
+  capacity: number;
+  handlingFee: number;
   description?: string;
+  photos?: string[];
 }
 
 export interface StoredRelayPointApplication extends RelayPointApplication {

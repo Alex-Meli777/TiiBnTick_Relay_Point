@@ -21,6 +21,8 @@ export default function RelayPointsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [center, setCenter] = useState(DEFAULT_MAP_CENTER);
   const [radiusKm, setRadiusKm] = useState(10);
+  const [radiusInput, setRadiusInput] = useState(String(10));
+  const [radiusError, setRadiusError] = useState<string | null>(null);
   const [onlyAvailable, setOnlyAvailable] = useState(true);
 
   const loadPoints = useCallback(async () => {
@@ -44,11 +46,31 @@ export default function RelayPointsPage() {
     loadPoints();
   }, [loadPoints]);
 
+  useEffect(() => {
+    setRadiusInput(String(radiusKm));
+  }, [radiusKm]);
+
+  function handleRadiusInput(value: string) {
+    setRadiusInput(value);
+    const numeric = Number(value);
+    if (value.trim() === "") {
+      setRadiusError("Entrez un rayon valide.");
+      return;
+    }
+    if (Number.isNaN(numeric) || numeric <= 0) {
+      setRadiusError("Le rayon doit être un nombre positif.");
+      return;
+    }
+    setRadiusError(null);
+    setRadiusKm(numeric);
+  }
+
   async function handleUseMyLocation() {
     setLocating(true);
     try {
       const loc = await getDeviceLocation();
       setCenter({ latitude: loc.latitude, longitude: loc.longitude });
+      setSelectedId(null);
     } catch {
       alert("Impossible d'obtenir votre position");
     } finally {
@@ -87,16 +109,42 @@ export default function RelayPointsPage() {
           {locating ? "Localisation..." : "Utiliser ma position"}
         </button>
 
-        <select
-          value={radiusKm}
-          onChange={(e) => setRadiusKm(Number(e.target.value))}
-          className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
-        >
-          <option value={5}>5 km</option>
-          <option value={10}>10 km</option>
-          <option value={25}>25 km</option>
-          <option value={50}>50 km</option>
-        </select>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {[5, 10, 25, 50].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => handleRadiusInput(String(preset))}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  radiusKm === preset
+                    ? "bg-orange-600 text-white"
+                    : "border border-gray-200 bg-white text-gray-600 hover:border-orange-300"
+                }`}
+              >
+                {preset} km
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={radiusInput}
+              onChange={(e) => handleRadiusInput(e.target.value)}
+              placeholder="Ou entrez une valeur"
+              className={`rounded-xl border px-3 py-2 text-sm flex-1 ${
+                radiusError ? "border-red-500" : "border-gray-200"
+              }`}
+              aria-label="Rayon de recherche personnalisé en kilomètres"
+              pattern="[0-9]*"
+            />
+            <span className="text-sm font-medium text-gray-600">km</span>
+          </div>
+          {radiusError ? (
+            <span className="text-xs text-red-500">{radiusError}</span>
+          ) : null}
+        </div>
 
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
@@ -141,27 +189,15 @@ export default function RelayPointsPage() {
             points={points}
             center={center}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onCenterChange={(coords) => {
+              setCenter(coords);
+              setSelectedId(null);
+            }}
+            radiusKm={radiusKm}
             className="h-[420px] w-full rounded-2xl border border-gray-200"
           />
           <div className="space-y-3">
-            {selected ? (
-              <>
-                <RelayPointCard point={selected} />
-                <Link
-                  href={`/relay-points/${selected.id}`}
-                  className="block rounded-xl bg-orange-600 py-3 text-center text-sm font-semibold text-white hover:bg-orange-700"
-                >
-                  Voir les détails
-                </Link>
-              </>
-            ) : (
-              <RelayPointList
-                points={points.slice(0, 5)}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
-            )}
+            <RelayPointList points={points.slice(0, 5)} selectedId={selectedId} />
           </div>
         </div>
       ) : (

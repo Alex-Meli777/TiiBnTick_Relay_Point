@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Shield, Lock } from "lucide-react";
 import type { RelayPoint, StoredRelayPointApplication } from "@/types/relayPoint";
+import type { RelayPointDetail } from "@/services/relayPointService";
 import { RELAY_POINT_TYPE_LABELS } from "@/types/relayPoint";
+import { getRelayPointDetail } from "@/services/relayPointService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -143,7 +145,7 @@ export default function AdminPage() {
       <ToastMsg toast={toast} onClose={() => setToast(null)} />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-orange-100 bg-white/90 backdrop-blur-xl shadow-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-orange-100 bg-white shadow-sm">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">TiiBnTick Admin</p>
@@ -233,6 +235,9 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
   const [points, setPoints] = useState<RelayPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [editPoint, setEditPoint] = useState<RelayPoint | null>(null);
+  const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
+  const [expandedPointDetails, setExpandedPointDetails] = useState<Record<string, RelayPointDetail>>({});
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editCapacity, setEditCapacity] = useState("");
   const [editStatus, setEditStatus] = useState<RelayPoint["status"]>("active");
@@ -251,6 +256,26 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
   }
 
   useEffect(() => { load(); }, []);
+
+  async function toggleDetail(id: string) {
+    if (expandedPointId === id) {
+      setExpandedPointId(null);
+      return;
+    }
+
+    setExpandedPointId(id);
+    if (expandedPointDetails[id]) return;
+
+    setDetailLoadingId(id);
+    try {
+      const data = await getRelayPointDetail(id);
+      setExpandedPointDetails((prev) => ({ ...prev, [id]: data }));
+    } catch (error) {
+      showToast("Impossible de charger les détails du point relais", "error");
+    } finally {
+      setDetailLoadingId(null);
+    }
+  }
 
   function openEdit(p: RelayPoint) {
     setEditPoint(p);
@@ -308,27 +333,125 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
       )}
 
       <div className="grid gap-4">
-        {points.map(p => (
-          <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-gray-800 truncate">{p.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.status === "active" ? "bg-green-100 text-green-700" : p.status === "suspended" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
-                  {p.status === "active" ? "Actif" : p.status === "suspended" ? "Suspendu" : "En attente"}
-                </span>
-              </div>
-              <p className="text-sm text-gray-500">{p.address}, {p.city} · {RELAY_POINT_TYPE_LABELS[p.type]}</p>
-              <p className="text-xs text-gray-400 mt-1">Capacité : {p.currentLoad}/{p.capacity} · Frais : {p.handlingFee} FCFA · ID : {p.id}</p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button onClick={() => openEdit(p)} className="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg transition">✏️ Modifier</button>
-              <button onClick={() => handleDelete(p.id, p.name)} className="text-sm bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1.5 rounded-lg transition">🗑 Supprimer</button>
-            </div>
-          </div>
-        ))}
-      </div>
+        {points.map((p) => {
+          const detail = expandedPointDetails[p.id];
+          const isExpanded = expandedPointId === p.id;
+          const isLoadingDetails = detailLoadingId === p.id;
 
-      {/* Modal modification */}
+          return (
+            <div
+              key={p.id}
+              className={`bg-white rounded-xl border border-gray-200 p-5 transition hover:shadow-lg ${isExpanded ? "shadow-xl" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <button
+                  type="button"
+                  onClick={() => toggleDetail(p.id)}
+                  className="flex-1 text-left"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-gray-800 truncate">{p.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.status === "active" ? "bg-green-100 text-green-700" : p.status === "suspended" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
+                      {p.status === "active" ? "Actif" : p.status === "suspended" ? "Suspendu" : "En attente"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500">{p.address}, {p.city} · {RELAY_POINT_TYPE_LABELS[p.type]}</p>
+                  <p className="text-xs text-gray-400 mt-1">Capacité : {p.currentLoad}/{p.capacity} · Frais : {p.handlingFee} FCFA · ID : {p.id}</p>
+                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEdit(p); }}
+                    className="text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg transition"
+                  >
+                    ✏️ Modifier
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(p.id, p.name); }}
+                    className="text-sm bg-red-200 hover:bg-red-300 text-red-700 px-3 py-1.5 rounded-lg transition font-bold"
+                  >
+                    🗑 Supprimer
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="mt-5 border-t border-gray-100 pt-5 text-sm text-gray-700">
+                  {isLoadingDetails ? (
+                    <div className="text-gray-500">Chargement des détails...</div>
+                  ) : detail ? (
+                    <>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations du gestionnaire</h4>
+                          {detail.manager ? (
+                            <div className="space-y-3 text-sm text-gray-700">
+                              <p><span className="font-medium">Nom :</span> {detail.manager.fullName}</p>
+                              <p><span className="font-medium">Téléphone :</span> {detail.manager.phone}</p>
+                              <p><span className="font-medium">Email :</span> {detail.manager.email}</p>
+                              <p className="text-xs text-gray-500">Mot de passe masqué pour sécurité.</p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600">Aucun gestionnaire associé à ce point relais.</p>
+                          )}
+                        </div>
+
+                        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations générales</h4>
+                          <div className="space-y-2 text-sm text-gray-700">
+                            <p><span className="font-medium">Type :</span> {RELAY_POINT_TYPE_LABELS[detail.type]}</p>
+                            <p><span className="font-medium">Statut :</span> {detail.status === "active" ? "Actif" : detail.status === "suspended" ? "Suspendu" : "En attente"}</p>
+                            <p><span className="font-medium">Capacité :</span> {detail.currentLoad}/{detail.capacity}</p>
+                            <p><span className="font-medium">Frais de manutention :</span> {detail.handlingFee} FCFA</p>
+                            <p><span className="font-medium">Adresse :</span> {detail.address}, {detail.city}, {detail.region}, {detail.country}</p>
+                            <p><span className="font-medium">Lieu-dit :</span> {detail.lieuDit || "—"}</p>
+                            <p><span className="font-medium">Coordonnées :</span> {detail.latitude}, {detail.longitude}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations d’exploitation</h4>
+                        <div className="grid gap-4 lg:grid-cols-2 text-sm text-gray-700">
+                          <div>
+                            <p className="font-medium text-gray-900">Responsable du point relais</p>
+                            <p className="mt-2"><span className="font-medium">Nom du propriétaire :</span> {detail.ownerName}</p>
+                            <p><span className="font-medium">Téléphone :</span> {detail.ownerPhone}</p>
+                            {detail.ownerEmail && <p><span className="font-medium">Email :</span> {detail.ownerEmail}</p>}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Horaires d’ouverture</p>
+                            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                              {detail.openingHours.map((slot: RelayPoint["openingHours"][number]) => (
+                                <li key={slot.day} className="flex justify-between border-b border-gray-200 pb-1">
+                                  <span className="capitalize">{slot.day}</span>
+                                  <span>{slot.open} — {slot.close}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {detail.photos?.length ? (
+                        <div className="mt-5 rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Photos</h4>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {detail.photos.map((photo: string, index: number) => (
+                              <img key={index} src={photo} alt={`Photo ${index + 1}`} className="h-40 w-full rounded-2xl object-cover" />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="text-gray-500">Aucun détail disponible pour ce point relais.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
       {editPoint && (
         <div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -450,7 +573,7 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
                     {a.status === "pending" ? "En attente" : a.status === "approved" ? "Approuvée" : "Refusée"}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">👤 {a.applicantName} · 📞 {a.applicantPhone}</p>
+                <p className="text-sm text-gray-600">👤 {a.manager.firstName} {a.manager.lastName} · 📞 {a.manager.phone}</p>
                 <p className="text-sm text-gray-500">{a.address}, {a.city} ({a.region}) · {RELAY_POINT_TYPE_LABELS[a.type]}</p>
                 <p className="text-xs text-gray-400 mt-1">Soumis le {new Date(a.submittedAt).toLocaleDateString("fr-FR")} · ID : {a.id}</p>
               </div>
@@ -477,6 +600,10 @@ function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success
     ownerName: "", ownerPhone: "", capacity: "", handlingFee: "",
   });
   const [saving, setSaving] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [mapSelection, setMapSelection] = useState({ latitude: 3.87, longitude: 11.52 });
+  const [photoFrontUrl, setPhotoFrontUrl] = useState("");
+  const [photoBackUrl, setPhotoBackUrl] = useState("");
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -504,6 +631,7 @@ function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success
             { day: "sat", open: "09:00", close: "13:00" },
             { day: "sun", open: "00:00", close: "00:00" },
           ],
+          photos: [photoFrontUrl.trim(), photoBackUrl.trim()].filter(Boolean),
         }),
       });
       const data = await res.json();

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   searchRelayPoints,
   createRelayPoint,
+  findRelayPointManager,
+  createRelayPointManager,
 } from "@/lib/relayData";
 import { relayPointSchema } from "@/lib/schemas";
 
@@ -58,5 +60,34 @@ export async function POST(request: NextRequest) {
   };
 
   const point = createRelayPoint(payload as any);
+
+  const managerPayload = body?.manager;
+  if (
+    managerPayload &&
+    managerPayload.firstName &&
+    managerPayload.lastName &&
+    managerPayload.phone &&
+    managerPayload.email &&
+    managerPayload.password
+  ) {
+    let manager = findRelayPointManager({
+      email: managerPayload.email,
+      phone: managerPayload.phone,
+    });
+    if (!manager) {
+      manager = createRelayPointManager({
+        firstName: managerPayload.firstName,
+        lastName: managerPayload.lastName,
+        phone: managerPayload.phone,
+        email: managerPayload.email,
+        password: managerPayload.password,
+      });
+    }
+    if (!manager.managedRelayPointIds.includes(point.id)) {
+      manager.managedRelayPointIds.push(point.id);
+    }
+    point.managerId = manager.id;
+  }
+
   return NextResponse.json({ success: true, data: point }, { status: 201 });
 }

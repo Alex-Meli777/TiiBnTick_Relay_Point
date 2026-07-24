@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -24,11 +25,54 @@ export default function RelayDashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    // Skip auth check on login page
+    if (pathname.includes("/login")) {
+      setChecking(false);
+      return;
+    }
+
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/relay-auth/me");
+        const data = await res.json();
+        if (!mounted) return;
+        if (!data?.success) {
+          router.push("/rp-manager/login");
+        } else {
+          setChecking(false);
+        }
+      } catch (err) {
+        if (!mounted) return;
+        router.push("/rp-manager/login");
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [router, pathname]);
 
   async function handleLogout() {
     await fetch("/api/relay-auth/login", { method: "DELETE" });
     router.push("/rp-manager/login");
     router.refresh();
+  }
+
+  if (checking) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center text-gray-400">
+        Chargement...
+      </div>
+    );
+  }
+
+  const isLoginPage = pathname.includes("/login");
+
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   return (

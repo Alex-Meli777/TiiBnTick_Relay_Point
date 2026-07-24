@@ -18,6 +18,8 @@ interface RelayPointMapProps {
   center: { latitude: number; longitude: number };
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  onCenterChange?: (coords: { latitude: number; longitude: number }) => void;
+  radiusKm?: number;
   className?: string;
   zoom?: number;
 }
@@ -27,10 +29,12 @@ export default function RelayPointMap({
   center,
   selectedId,
   onSelect,
+  onCenterChange,
+  radiusKm,
   className = "h-80 w-full",
   zoom = 13,
 }: RelayPointMapProps) {
-  const markers: MapMarker[] = points.map((p) => {
+  const relayMarkers: MapMarker[] = points.map((p) => {
     const full = p.currentLoad >= p.capacity;
     return {
       id: p.id,
@@ -49,13 +53,26 @@ export default function RelayPointMap({
     };
   });
 
+  const centerMarker: MapMarker = {
+    id: "selected",
+    latitude: center.latitude,
+    longitude: center.longitude,
+    label: "Centre de recherche",
+    color: "blue",
+    popupContent: <div className="text-sm font-medium">Centre de recherche</div>,
+  };
+
   return (
     <MapLeaflet
       center={center}
       zoom={zoom}
-      markers={markers}
+      markers={[centerMarker, ...relayMarkers]}
+      radiusKm={radiusKm}
       className={className}
-      onMarkerClick={onSelect}
+      onMarkerClick={(id) => {
+        if (id !== "selected") onSelect?.(id);
+      }}
+      onMapClick={(latitude, longitude) => onCenterChange?.({ latitude, longitude })}
     />
   );
 }

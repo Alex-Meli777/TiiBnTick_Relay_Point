@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getRelayPointById,
+  getRelayPointManagerById,
   updateRelayPoint,
   deleteRelayPoint,
 } from "@/lib/relayData";
 import { relayPointUpdateSchema } from "@/lib/schemas";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   const point = getRelayPointById(params.id);
@@ -17,6 +18,23 @@ export async function GET(
       { status: 404 }
     );
   }
+
+  const url = new URL(request.url);
+  const includeManager = url.searchParams.get("includeManager") === "true";
+  if (includeManager && point.managerId) {
+    const manager = getRelayPointManagerById(point.managerId);
+    if (manager) {
+      const { password, managedRelayPointIds, ...safeManager } = manager;
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...point,
+          manager: safeManager,
+        },
+      });
+    }
+  }
+
   return NextResponse.json({ success: true, data: point });
 }
 

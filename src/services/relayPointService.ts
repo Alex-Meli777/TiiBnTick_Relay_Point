@@ -2,6 +2,7 @@ import { apiFetch, unwrapData } from "@/services/packageService";
 import type {
   ApiResponse,
   RelayPoint,
+  RelayPointManager,
   RelayPointSearchQuery,
   RelayPointSearchResult,
   RelayPointApplication,
@@ -25,6 +26,17 @@ export async function searchRelayPoints(
 export async function getRelayPoint(id: string): Promise<RelayPoint> {
   const res = await apiFetch<ApiResponse<RelayPoint>>(
     `/api/relay-points/${id}`
+  );
+  return unwrapData(res);
+}
+
+export interface RelayPointDetail extends RelayPoint {
+  manager?: Omit<RelayPointManager, "password" | "managedRelayPointIds">;
+}
+
+export async function getRelayPointDetail(id: string): Promise<RelayPointDetail> {
+  const res = await apiFetch<ApiResponse<RelayPointDetail>>(
+    `/api/relay-points/${id}?includeManager=true`
   );
   return unwrapData(res);
 }
