@@ -16,6 +16,7 @@ import {
   Truck, 
   Layers
 } from 'lucide-react';
+import { FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -347,53 +348,67 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-orange-500 text-gray-400 pt-16 pb-12 border-t border-orange-850">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-12 pb-12 border-b border-orange-800">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-white">
-              <Layers className="h-6 w-6 text-orange-500" />
-              <span className="text-xl font-black">TiiBnTick</span>
+      <footer className="border-t border-orange-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffedd5_45%,#fffaf5_100%)] pt-16 pb-12 text-slate-700">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 pb-12 sm:px-6 md:grid-cols-4 lg:px-8">
+          <div className="space-y-4 text-left">
+            <div className="flex items-center gap-2 text-orange-600">
+              <div className="rounded-2xl bg-white p-2 shadow-sm">
+                <Layers className="h-5 w-5" />
+              </div>
+              <span className="text-xl font-black tracking-tight">TiiBnTick</span>
             </div>
-            <p className="text-xs leading-relaxed">
+            <p className="max-w-sm text-sm leading-7 text-slate-600">
               La passerelle logistique moderne connectant commerçants, clients et transporteurs de confiance pour la gestion de colis du dernier kilomètre.
             </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <a href="https://www.facebook.com/YowyobInc" target="_blank" rel="noreferrer" aria-label="Facebook" className="flex h-10 w-10 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50">
+                <FaFacebook className="h-4 w-4" />
+              </a>
+              <a href="https://twitter.com/yowyob" target="_blank" rel="noreferrer" aria-label="Twitter" className="flex h-10 w-10 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50">
+                <FaTwitter className="h-4 w-4" />
+              </a>
+              <a href="https://www.instagram.com/yowyob" target="_blank" rel="noreferrer" aria-label="Instagram" className="flex h-10 w-10 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50">
+                <FaInstagram className="h-4 w-4" />
+              </a>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-white font-semibold text-sm mb-4">Pour les expéditeurs</h4>
-            <ul className="space-y-2.5 text-xs">
-              <li><Link href="/relay-points" className="hover:text-orange-400 transition-colors">Trouver un Point Relais</Link></li>
-              <li><Link href="/inscription" className="hover:text-orange-400 transition-colors">Créer un compte</Link></li>
-              <li><Link href="/login" className="hover:text-orange-400 transition-colors">Suivi d&apos;expédition</Link></li>
+          <div className="text-left">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-orange-600">Pour les expéditeurs</h4>
+            <ul className="space-y-2.5 text-sm text-slate-600">
+              <li><Link href="/relay-points" className="transition hover:text-orange-600">Trouver un Point Relais</Link></li>
+              <li><Link href="/inscription" className="transition hover:text-orange-600">Créer un compte</Link></li>
+              <li><Link href="/login" className="transition hover:text-orange-600">Suivi d&apos;expédition</Link></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="text-white font-semibold text-sm mb-4">Pour les commerçants</h4>
-            <ul className="space-y-2.5 text-xs">
-              <li><Link href="/relay-points/postuler" className="hover:text-orange-400 transition-colors">Devenir Point Relais</Link></li>
-              <li><Link href="/rp-manager/login" className="hover:text-orange-400 transition-colors">Espace Propriétaire</Link></li>
-              <li><Link href="/relay-points" className="hover:text-orange-400 transition-colors">Critères de sélection</Link></li>
+          <div className="text-left">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-orange-600">Pour les commerçants</h4>
+            <ul className="space-y-2.5 text-sm text-slate-600">
+              <li><Link href="/relay-points/postuler" className="transition hover:text-orange-600">Devenir Point Relais</Link></li>
+              <li><Link href="/rp-manager/login" className="transition hover:text-orange-600">Espace Propriétaire</Link></li>
+              <li><Link href="/relay-points" className="transition hover:text-orange-600">Critères de sélection</Link></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="text-white font-semibold text-sm mb-4">Sécurité & Support</h4>
-            <p className="text-xs leading-relaxed mb-4">
+          <div className="text-left">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-orange-600">Sécurité & Support</h4>
+            <p className="mb-4 text-sm leading-7 text-slate-600">
               Tous nos colis sont couverts contre les dommages physiques durant la phase d&apos;attribution et de stockage intermédiaire.
             </p>
-            <span className="inline-flex items-center gap-1.5 bg-orange-950 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-orange-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600 shadow-sm">
               <ShieldCheck className="h-3 w-3" /> Protection Intégrale 100%
             </span>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 pt-8 text-sm text-slate-600 sm:flex-row sm:px-6 lg:px-8">
           <p>© {new Date().getFullYear()} TiiBnTick. Tous droits réservés.</p>
-          <div className="flex gap-6 mt-4 sm:mt-0">
-            <a href="#" className="hover:text-orange-400">Mentions légales</a>
-            <a href="#" className="hover:text-orange-400">Confidentialité</a>
-            <a href="#" className="hover:text-orange-400">Conditions d&apos;utilisation</a>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
+            <Link href="/legal/mentions-legales" className="transition hover:text-orange-600">Mentions légales</Link>
+            <Link href="/legal/confidentialite" className="transition hover:text-orange-600">Confidentialité</Link>
+            <Link href="/legal/conditions-generales" className="transition hover:text-orange-600">Conditions d&apos;utilisation</Link>
+            <Link href="/legal/politique-cookies" className="transition hover:text-orange-600">Cookies</Link>
           </div>
         </div>
       </footer>
