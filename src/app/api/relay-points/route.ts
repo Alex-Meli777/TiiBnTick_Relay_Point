@@ -127,11 +127,9 @@ export async function POST(request: NextRequest) {
     });
     if (!manager) {
       manager = createRelayPointManager({
-        firstName: managerPayload.firstName,
-        lastName: managerPayload.lastName,
-        phone: managerPayload.phone,
-        email: managerPayload.email,
-        password: managerPayload.password || "",
+      ...managerPayload,
+      nationalId: "ADMIN-CREATED",
+      nui: "ADMIN-CREATED",  
       });
     }
   }
@@ -140,7 +138,7 @@ export async function POST(request: NextRequest) {
     if (!manager.managedRelayPointIds.includes(point.id)) {
       manager.managedRelayPointIds.push(point.id);
     }
-    point.managerId = manager.id;
+    point.freelancerId = manager.id;
   }
 
   return NextResponse.json({ success: true, data: point }, { status: 201 });

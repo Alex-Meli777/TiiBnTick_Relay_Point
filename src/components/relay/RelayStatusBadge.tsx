@@ -1,15 +1,30 @@
 import type { RelayPoint, ParcelHubStatus } from "@/types/relayPoint";
+import { RelayPointStatusBackend } from "@/types/relayPoint";
 import { cn } from "@/lib/utils";
 
 const relayStatusConfig: Record<
-  RelayPoint["status"],
+  RelayPointStatusBackend, // Use the new enum type
   { label: string; className: string }
 > = {
-  active: { label: "Actif", className: "bg-green-100 text-green-800" },
-  suspended: { label: "Suspendu", className: "bg-red-100 text-red-800" },
-  pending_validation: {
+  [RelayPointStatusBackend.APPROVED]: {
+    label: "Actif",
+    className: "bg-green-100 text-green-800",
+  },
+  [RelayPointStatusBackend.SUSPENDED]: {
+    label: "Suspendu",
+    className: "bg-red-100 text-red-800",
+  },
+  [RelayPointStatusBackend.PENDING]: {
     label: "En validation",
     className: "bg-yellow-100 text-yellow-800",
+  },
+  [RelayPointStatusBackend.REJECTED]: {
+    label: "Refusé",
+    className: "bg-gray-100 text-gray-800",
+  },
+  [RelayPointStatusBackend.REVOKED]: {
+    label: "Révoqué",
+    className: "bg-black text-white",
   },
 };
 

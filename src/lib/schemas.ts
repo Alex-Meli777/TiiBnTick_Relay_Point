@@ -1,3 +1,4 @@
+import { RelayPointStatusBackend } from "@/types/relayPoint";
 import { z } from "zod";
 
 export const relayPointSchema = z.object({
@@ -19,7 +20,7 @@ export const relayPointSchema = z.object({
   capacity: z.number().int().positive(),
   currentLoad: z.number().int().min(0).optional(),
   handlingFee: z.number().int().nonnegative().optional(),
-  status: z.enum(["active", "suspended", "pending_validation"]).optional(),
+  status: z.nativeEnum(RelayPointStatusBackend).optional(),
   photos: z.array(z.string()).optional(),
 });
 

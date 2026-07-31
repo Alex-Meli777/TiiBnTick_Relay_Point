@@ -220,29 +220,42 @@ export function approveApplication(
       phone: managerData.phone,
       email: managerData.email,
       password: managerData.password,
+      nationalId: "MOCK-ID-REQUIRED", // ADDED
+      nui: "MOCK-NUI-REQUIRED", // ADDED
     });
   }
 
-  const point: RelayPoint = createRelayPoint({
-    name: application.businessName,
-    type: application.type,
-    country: application.country,
-    region: application.region,
-    city: application.city,
-    address: application.address,
-    lieuDit: application.lieuDit,
-    latitude: overrides?.latitude ?? application.latitude,
-    longitude: overrides?.longitude ?? application.longitude,
-    ownerName: `${manager.firstName} ${manager.lastName}`,
-    ownerPhone: manager.phone,
-    ownerEmail: manager.email,
-    openingHours: overrides?.openingHours ?? application.openingHours ?? DEFAULT_OPENING_HOURS,
-    capacity: overrides?.capacity ?? application.capacity,
-    currentLoad: 0,
-    handlingFee: overrides?.handlingFee ?? application.handlingFee,
-    status: RelayPointStatusBackend.APPROVED,
-    managerId: manager.id,
-  });
+const point: RelayPoint = createRelayPoint({
+  name: application.businessName, // The Relay Point name
+  type: application.type,
+  country: application.country,
+  region: application.region,
+  city: application.city,
+  address: application.address,
+  lieuDit: application.lieuDit,
+  latitude: overrides?.latitude ?? application.latitude,
+  longitude: overrides?.longitude ?? application.longitude,
+
+  // FIX: Provide the freelancerId (manager link)
+  freelancerId: manager.id,
+
+  openingHours:
+    overrides?.openingHours ??
+    application.openingHours ??
+    DEFAULT_OPENING_HOURS,
+  capacity: overrides?.capacity ?? application.capacity,
+  currentLoad: 0,
+  handlingFee: overrides?.handlingFee ?? application.handlingFee,
+  status: RelayPointStatusBackend.APPROVED,
+
+  // FIX: Removed ownerPhone, ownerName, ownerEmail as they are no longer in the type
+
+  // Map dimensions from the application
+  storageLength: application.storageLength,
+  storageWidth: application.storageWidth,
+  storageHeight: application.storageHeight,
+  storageDimensionUnit: application.storageDimensionUnit,
+});
 
   if (!manager.managedRelayPointIds.includes(point.id)) {
     manager.managedRelayPointIds.push(point.id);

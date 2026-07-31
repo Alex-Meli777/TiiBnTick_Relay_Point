@@ -65,13 +65,17 @@ export default function RelayPointDetailPage({
                 {point.address}, {point.lieuDit}
               </span>
             </div>
+            {/* The property ownerPhone was removed from RelayPoint. We should hide it or use a placeholder until the "Manager" data is fetched. 
+            FIX: Access via manager info if available, or just hide for now */}
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-orange-500" />
-              <span>{point.ownerPhone}</span>
+              <span>Contact indisponible (voir manager)</span>
             </div>
             <div className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-orange-500" />
-              <span>Frais de manutention : {formatFcfa(point.handlingFee)}</span>
+              <span>
+                Frais de manutention : {formatFcfa(point.handlingFee)}
+              </span>
             </div>
             <div className="text-gray-500">
               Capacité : {point.currentLoad}/{point.capacity} colis

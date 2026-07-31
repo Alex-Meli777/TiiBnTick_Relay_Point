@@ -21,8 +21,8 @@ export async function GET(
 
   const url = new URL(request.url);
   const includeManager = url.searchParams.get("includeManager") === "true";
-  if (includeManager && point.managerId) {
-    const manager = getRelayPointManagerById(point.managerId);
+  if (includeManager && point.freelancerId) {
+    const manager = getRelayPointManagerById(point.freelancerId);
     if (manager) {
       const { password, managedRelayPointIds, ...safeManager } = manager;
       return NextResponse.json({
@@ -70,7 +70,7 @@ export async function PUT(
     );
   }
 
-  const updated = updateRelayPoint(params.id, parsed.data);
+  const updated = updateRelayPoint(params.id, parsed.data as any);
   return NextResponse.json({ success: true, data: updated });
 }
 
