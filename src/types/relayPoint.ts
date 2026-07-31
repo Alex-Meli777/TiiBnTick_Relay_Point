@@ -219,6 +219,7 @@ export const RELAY_POINT_TYPE_LABELS: Record<RelayPoint["type"], string> = {
   official_agency: "Agence officielle",
 };
 
+
 export const DAY_LABELS: Record<
   RelayPoint["openingHours"][number]["day"],
   string
