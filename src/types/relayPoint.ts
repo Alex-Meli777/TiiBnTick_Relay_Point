@@ -1,3 +1,14 @@
+// ./types/relayPoint.ts
+// ----------------------------------------------------------------------------------------------------
+
+export enum RelayPointStatusBackend {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  SUSPENDED = "SUSPENDED",
+  REJECTED = "REJECTED",
+  REVOKED = "REVOKED",
+}
+
 export interface RelayPointManager {
   id: string;
   firstName: string;
@@ -6,6 +17,8 @@ export interface RelayPointManager {
   phone: string;
   email: string;
   password: string;
+  nationalId: string; // Added: For backend Freelancer creation
+  nui: string; // Added: For backend Freelancer creation
   managedRelayPointIds: string[];
 }
 
@@ -22,10 +35,10 @@ export interface RelayPoint {
   lieuDit: string;
   latitude: number;
   longitude: number;
-  ownerName: string;
-  ownerPhone: string;
-  ownerEmail?: string;
-  managerId?: string;
+
+  // Renamed from managerId to freelancerId for backend alignment
+  freelancerId: string;
+
   openingHours: {
     day: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
     open: string;
@@ -34,8 +47,33 @@ export interface RelayPoint {
   capacity: number;
   currentLoad: number;
   handlingFee: number;
-  status: "active" | "suspended" | "pending_validation";
+
+  // Uses the new backend-aligned status enum
+  status: RelayPointStatusBackend;
   photos?: string[];
+
+  // Added storage dimensions for consistency with UI form and backend logistics table
+  storageLength?: number;
+  storageWidth?: number;
+  storageHeight?: number;
+  storageDimensionUnit?: "cm" | "m";
+}
+
+// NEW: Interface for Relay Point Pricing Policy (maps to backend RelayPointPricingPolicy.java)
+export interface RelayPointPricingPolicy {
+  id?: string; // Optional for creation, assigned by backend
+  relayPointId: string;
+  pricePerKg: number;
+  pricePerCbm: number;
+  pricePerDay: number; // Daily storage fee
+  gracePeriodDays: number; // Number of free storage days
+  penaltyPerDay: number; // Penalty fee per day after grace period
+  fragileSurcharge: number;
+  perishableSurcharge: number;
+  baseFee: number;
+  currency: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RelayPointSearchQuery {
@@ -103,24 +141,25 @@ export interface RelayOwnerSession {
 export interface RelayNotification {
   id: string;
   trackingNumber: string;
-  type:
-    | "PARCEL_ARRIVED_AT_HUB"
-    | "PARCEL_READY_FOR_PICKUP"
-    | "PARCEL_OVERDUE";
+  type: "PARCEL_ARRIVED_AT_HUB" | "PARCEL_READY_FOR_PICKUP" | "PARCEL_OVERDUE";
   message: string;
   createdAt: string;
   read: boolean;
 }
 
+// Updated RelayPointApplication to include nationalId/nui for manager and storage dimensions
 export interface RelayPointApplication {
   manager: {
+    // This manager object will implicitly create a Freelancer in the backend
     firstName: string;
     lastName: string;
     phone: string;
     email: string;
     password: string;
+    nationalId?: string; // Added for freelancer creation alignment
+    nui?: string; // Added for freelancer creation alignment
   };
-  businessName: string;
+  businessName: string; // maps to RelayPoint.name
   type: RelayPoint["type"];
   country: string;
   region: string;
@@ -133,13 +172,19 @@ export interface RelayPointApplication {
   capacity: number;
   handlingFee: number;
   description?: string;
-  photos?: string[];
+  photos?: string[]; // Base64 strings for application submission. Maps to storefrontPhoto/shopPhoto in backend.
+
+  // Added storage dimensions for consistency with UI form.
+  storageLength?: number;
+  storageWidth?: number;
+  storageHeight?: number;
+  storageDimensionUnit?: "cm" | "m";
 }
 
 export interface StoredRelayPointApplication extends RelayPointApplication {
   id: string;
   submittedAt: string;
-  status: "pending" | "approved" | "rejected";
+  status: RelayPointStatusBackend; // Use backend-aligned enum
 }
 
 export interface DeliveryTrackingSession {

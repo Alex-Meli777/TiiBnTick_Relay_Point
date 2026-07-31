@@ -499,6 +499,29 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [expandedApplicationId, setExpandedApplicationId] = useState<string | null>(null);
+const [reason, setReason] = useState("");
+const [finalCapacity, setFinalCapacity] = useState(20);
+const handleProcessValidation = async (approved: boolean) => {
+  if (!validationModal) return;
+
+  try {
+    const res = await validateRelayPointApplication(
+      validationModal.id,
+      approved,
+      reason,
+      approved ? { capacity: finalCapacity } : undefined,
+    );
+
+    if (res.success) {
+      showToast(approved ? "Validé !" : "Refusé", "success");
+      load(); // Refresh list
+      setValidationModal(null);
+      setReason("");
+    }
+  } catch (err) {
+    showToast("Erreur de validation", "error");
+  }
+};
 
   async function load() {
     setLoading(true);
@@ -572,25 +595,50 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
         {applications.map((a) => {
           const isExpanded = expandedApplicationId === a.id;
           return (
-            <div key={a.id} className="rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+            <div
+              key={a.id}
+              className="rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+            >
               <button
                 type="button"
-                onClick={() => setExpandedApplicationId(isExpanded ? null : a.id)}
+                onClick={() =>
+                  setExpandedApplicationId(isExpanded ? null : a.id)
+                }
                 className="w-full text-left p-5"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-lg font-semibold text-gray-900 truncate">{a.businessName}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${a.status === "pending" ? "bg-yellow-100 text-yellow-700" : a.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                        {a.status === "pending" ? "En attente" : a.status === "approved" ? "Approuvée" : "Refusée"}
+                      <span className="text-lg font-semibold text-gray-900 truncate">
+                        {a.businessName}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-semibold ${a.status === "PENDING" ? "bg-yellow-100 text-yellow-700" : a.status === "APPROVED" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                      >
+                        {a.status === "PENDING"
+                          ? "En attente"
+                          : a.status === "APPROVED"
+                            ? "Approuvée"
+                            : "Refusée"}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-gray-600">{RELAY_POINT_TYPE_LABELS[a.type]} · {a.address}, {a.city}</p>
-                    <p className="mt-2 text-sm text-gray-500">Demande par {a.manager.firstName} {a.manager.lastName} · {a.manager.phone}</p>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {RELAY_POINT_TYPE_LABELS[a.type]} · {a.address}, {a.city}
+                    </p>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Demande par {a.manager.firstName} {a.manager.lastName} ·{" "}
+                      {a.manager.phone}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-xs text-gray-400">Soumis le {new Date(a.submittedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                    <p className="text-xs text-gray-400">
+                      Soumis le{" "}
+                      {new Date(a.submittedAt).toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </p>
                     <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
                       {isExpanded ? "Réduire" : "Voir détails"}
                     </span>
@@ -602,36 +650,84 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
                 <div className="border-t border-gray-100 px-5 py-5 text-sm text-gray-700">
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Détails du gestionnaire</h3>
-                      <p><span className="font-medium">Nom :</span> {a.manager.firstName} {a.manager.lastName}</p>
-                      <p><span className="font-medium">Téléphone :</span> {a.manager.phone}</p>
-                      <p><span className="font-medium">Email :</span> {a.manager.email}</p>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Détails du gestionnaire
+                      </h3>
+                      <p>
+                        <span className="font-medium">Nom :</span>{" "}
+                        {a.manager.firstName} {a.manager.lastName}
+                      </p>
+                      <p>
+                        <span className="font-medium">Téléphone :</span>{" "}
+                        {a.manager.phone}
+                      </p>
+                      <p>
+                        <span className="font-medium">Email :</span>{" "}
+                        {a.manager.email}
+                      </p>
                     </div>
                     <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Adresse du point</h3>
-                      <p><span className="font-medium">Type :</span> {RELAY_POINT_TYPE_LABELS[a.type]}</p>
-                      <p><span className="font-medium">Adresse :</span> {a.address}</p>
-                      <p><span className="font-medium">Complément :</span> {a.lieuDit || "—"}</p>
-                      <p><span className="font-medium">Localité :</span> {a.city}, {a.region}, {a.country}</p>
-                      <p><span className="font-medium">Coordonnées :</span> {a.latitude}, {a.longitude}</p>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Adresse du point
+                      </h3>
+                      <p>
+                        <span className="font-medium">Type :</span>{" "}
+                        {RELAY_POINT_TYPE_LABELS[a.type]}
+                      </p>
+                      <p>
+                        <span className="font-medium">Adresse :</span>{" "}
+                        {a.address}
+                      </p>
+                      <p>
+                        <span className="font-medium">Complément :</span>{" "}
+                        {a.lieuDit || "—"}
+                      </p>
+                      <p>
+                        <span className="font-medium">Localité :</span> {a.city}
+                        , {a.region}, {a.country}
+                      </p>
+                      <p>
+                        <span className="font-medium">Coordonnées :</span>{" "}
+                        {a.latitude}, {a.longitude}
+                      </p>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-4 lg:grid-cols-2">
                     <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Conditions d’exploitation</h3>
-                      <p><span className="font-medium">Capacité :</span> {a.capacity} colis</p>
-                      <p><span className="font-medium">Frais :</span> {a.handlingFee} FCFA</p>
-                      {a.description ? <p className="mt-3"><span className="font-medium">Description :</span> {a.description}</p> : null}
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Conditions d’exploitation
+                      </h3>
+                      <p>
+                        <span className="font-medium">Capacité :</span>{" "}
+                        {a.capacity} colis
+                      </p>
+                      <p>
+                        <span className="font-medium">Frais :</span>{" "}
+                        {a.handlingFee} FCFA
+                      </p>
+                      {a.description ? (
+                        <p className="mt-3">
+                          <span className="font-medium">Description :</span>{" "}
+                          {a.description}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Horaires</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Horaires
+                      </h3>
                       {a.openingHours?.length ? (
                         <ul className="space-y-2">
                           {a.openingHours.map((slot) => (
-                            <li key={slot.day} className="flex justify-between border-b border-gray-200 pb-1">
+                            <li
+                              key={slot.day}
+                              className="flex justify-between border-b border-gray-200 pb-1"
+                            >
                               <span className="capitalize">{slot.day}</span>
-                              <span>{slot.open} — {slot.close}</span>
+                              <span>
+                                {slot.open} — {slot.close}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -643,17 +739,24 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
 
                   {a.photos?.length ? (
                     <div className="mt-5 rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Photos</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Photos
+                      </h3>
                       <div className="grid gap-3 sm:grid-cols-2">
                         {a.photos.map((photo, index) => (
-                          <img key={index} src={photo} alt={`Photo ${index + 1}`} className="h-40 w-full rounded-2xl object-cover" />
+                          <img
+                            key={index}
+                            src={photo}
+                            alt={`Photo ${index + 1}`}
+                            className="h-40 w-full rounded-2xl object-cover"
+                          />
                         ))}
                       </div>
                     </div>
                   ) : null}
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                    {a.status === "pending" && (
+                    {a.status === "PENDING" && (
                       <>
                         <button
                           onClick={() => handleReject(a.id)}
@@ -662,7 +765,9 @@ function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | 
                           ❌ Refuser
                         </button>
                         <button
-                          onClick={() => handleApprove(a.id)}
+                          onClick={() =>
+                            setValidationModal({ id: a.id, mode: "approve" })
+                          }
                           className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition"
                         >
                           ✅ Approuver

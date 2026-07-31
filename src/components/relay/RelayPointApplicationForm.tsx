@@ -305,9 +305,16 @@ export default function RelayPointApplicationForm({
       return (
         <div className="space-y-6">
           <div className="space-y-3 rounded-3xl border border-orange-100 bg-orange-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape 1</p>
-            <h2 className="text-xl font-bold text-gray-900">Informations du gestionnaire</h2>
-            <p className="text-sm text-gray-600">Renseignez les informations du manager qui sera lié au point relais.</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">
+              Étape 1
+            </p>
+            <h2 className="text-xl font-bold text-gray-900">
+              Informations du gestionnaire
+            </h2>
+            <p className="text-sm text-gray-600">
+              Renseignez les informations du manager qui sera lié au point
+              relais.
+            </p>
           </div>
 
           {existingManagers?.length ? (
@@ -333,7 +340,9 @@ export default function RelayPointApplicationForm({
 
           {existingManagers?.length && managerSelectionMode === "existing" ? (
             <div className="space-y-4 rounded-3xl border border-gray-200 bg-gray-50 p-4">
-              <label className="text-sm font-medium text-gray-700">Gestionnaire existant</label>
+              <label className="text-sm font-medium text-gray-700">
+                Gestionnaire existant
+              </label>
               <select
                 value={selectedManagerId ?? ""}
                 onChange={(e) => setSelectedManagerId(e.target.value)}
@@ -348,11 +357,15 @@ export default function RelayPointApplicationForm({
               {selectedManagerId ? (
                 <div className="rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-700">
                   {(() => {
-                    const manager = existingManagers.find((m) => m.id === selectedManagerId);
+                    const manager = existingManagers.find(
+                      (m) => m.id === selectedManagerId,
+                    );
                     if (!manager) return null;
                     return (
                       <>
-                        <p className="font-semibold text-gray-900">{manager.firstName} {manager.lastName}</p>
+                        <p className="font-semibold text-gray-900">
+                          {manager.firstName} {manager.lastName}
+                        </p>
                         <p>Téléphone : {manager.phone}</p>
                         <p>Email : {manager.email}</p>
                       </>
@@ -395,6 +408,22 @@ export default function RelayPointApplicationForm({
                   onChange={(e) => updateManager("email", e.target.value)}
                 />
               </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CustomInput
+                  label="Numéro CNI (ID Card)"
+                  required
+                  value={form.manager.nationalId}
+                  onChange={(e) => updateManager("nationalId", e.target.value)}
+                  placeholder="123456789"
+                />
+                <CustomInput
+                  label="Numéro NIU (Taxpayer Number)"
+                  required
+                  value={form.manager.nui}
+                  onChange={(e) => updateManager("nui", e.target.value)}
+                  placeholder="M123456789012"
+                />
+              </div>
 
               <CustomInput
                 label="Mot de passe"
@@ -414,9 +443,16 @@ export default function RelayPointApplicationForm({
       return (
         <div className="space-y-6">
           <div className="space-y-3 rounded-3xl border border-orange-100 bg-orange-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">Étape {visibleStep}</p>
-            <h2 className="text-xl font-bold text-gray-900">Informations du point relais</h2>
-            <p className="text-sm text-gray-600">Complétez l’adresse, la capacité, les horaires et la présentation du projet.</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-600">
+              Étape {visibleStep}
+            </p>
+            <h2 className="text-xl font-bold text-gray-900">
+              Informations du point relais
+            </h2>
+            <p className="text-sm text-gray-600">
+              Complétez l’adresse, la capacité, les horaires et la présentation
+              du projet.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -427,18 +463,23 @@ export default function RelayPointApplicationForm({
               onChange={(e) => updateField("businessName", e.target.value)}
             />
             <div>
-              <p className="mb-2 text-sm font-medium text-gray-700">Type de point relais</p>
+              <p className="mb-2 text-sm font-medium text-gray-700">
+                Type de point relais
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {(Object.entries(RELAY_POINT_TYPE_LABELS) as [RelayPointApplication["type"], string][]).map(
-                  ([value, label]) => (
-                    <OptionCard
-                      key={value}
-                      label={label}
-                      selected={form.type === value}
-                      onClick={() => updateField("type", value)}
-                    />
-                  )
-                )}
+                {(
+                  Object.entries(RELAY_POINT_TYPE_LABELS) as [
+                    RelayPointApplication["type"],
+                    string,
+                  ][]
+                ).map(([value, label]) => (
+                  <OptionCard
+                    key={value}
+                    label={label}
+                    selected={form.type === value}
+                    onClick={() => updateField("type", value)}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -453,7 +494,10 @@ export default function RelayPointApplicationForm({
                 updateField("region", region);
                 updateField("city", CAMEROON_CITIES[region]?.[0] ?? "");
               }}
-              options={CAMEROON_REGIONS.map((region) => ({ value: region, label: region }))}
+              options={CAMEROON_REGIONS.map((region) => ({
+                value: region,
+                label: region,
+              }))}
             />
             <CustomSelect
               label="Ville"
@@ -514,26 +558,84 @@ export default function RelayPointApplicationForm({
               type="number"
               required
               value={String(form.handlingFee)}
-              onChange={(e) => updateField("handlingFee", Number(e.target.value))}
+              onChange={(e) =>
+                updateField("handlingFee", Number(e.target.value))
+              }
             />
           </div>
 
+          <div className="space-y-3 rounded-3xl border border-gray-200 bg-white p-4 font-semibold">
+            <p className="text-sm font-semibold text-gray-700">
+              Dimensions de l'espace de stockage
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              <CustomInput
+                label="Long. (L)"
+                type="number"
+                value={String(form.storageLength)}
+                onChange={(e) =>
+                  updateField("storageLength", Number(e.target.value))
+                }
+              />
+              <CustomInput
+                label="Larg. (l)"
+                type="number"
+                value={String(form.storageWidth)}
+                onChange={(e) =>
+                  updateField("storageWidth", Number(e.target.value))
+                }
+              />
+              <CustomInput
+                label="Haut. (h)"
+                type="number"
+                value={String(form.storageHeight)}
+                onChange={(e) =>
+                  updateField("storageHeight", Number(e.target.value))
+                }
+              />
+              <CustomSelect
+                label="Unité"
+                value={form.storageDimensionUnit}
+                onChange={(e) =>
+                  updateField(
+                    "storageDimensionUnit",
+                    e.target.value as "cm" | "m",
+                  )
+                }
+                options={[
+                  { value: "m", label: "Mètres (m)" },
+                  { value: "cm", label: "Centimètres (cm)" },
+                ]}
+              />
+            </div>
+          </div>
           <div className="space-y-3 rounded-3xl border border-gray-200 bg-white p-4">
-            <p className="text-sm font-semibold text-gray-700">Horaires d'ouverture</p>
+            <p className="text-sm font-semibold text-gray-700">
+              Horaires d'ouverture
+            </p>
             <div className="grid gap-3">
               {form.openingHours?.map((entry) => (
-                <div key={entry.day} className="grid grid-cols-3 gap-3 items-center rounded-2xl bg-slate-50 px-4 py-3">
-                  <span className="font-medium text-gray-700">{DAY_LABELS[entry.day]}</span>
+                <div
+                  key={entry.day}
+                  className="grid grid-cols-3 gap-3 items-center rounded-2xl bg-slate-50 px-4 py-3"
+                >
+                  <span className="font-medium text-gray-700">
+                    {DAY_LABELS[entry.day]}
+                  </span>
                   <input
                     type="time"
                     value={entry.open}
-                    onChange={(e) => updateOpeningHour(entry.day, "open", e.target.value)}
+                    onChange={(e) =>
+                      updateOpeningHour(entry.day, "open", e.target.value)
+                    }
                     className="rounded-2xl border border-gray-200 px-3 py-2 text-sm"
                   />
                   <input
                     type="time"
                     value={entry.close}
-                    onChange={(e) => updateOpeningHour(entry.day, "close", e.target.value)}
+                    onChange={(e) =>
+                      updateOpeningHour(entry.day, "close", e.target.value)
+                    }
                     className="rounded-2xl border border-gray-200 px-3 py-2 text-sm"
                   />
                 </div>
@@ -555,53 +657,129 @@ export default function RelayPointApplicationForm({
 
           <div className="grid grid-cols-2 gap-2 md:gap-4">
             <label htmlFor="photo-front" className="block">
-              <div className={`border-2 border-dashed rounded-lg p-3 md:p-4 cursor-pointer hover:border-orange-500 transition-colors text-center bg-orange-100/50 ${photoFrontPreview ? 'border-green-400' : 'border-orange-400'}`}>
+              <div
+                className={`border-2 border-dashed rounded-lg p-3 md:p-4 cursor-pointer hover:border-orange-500 transition-colors text-center bg-orange-100/50 ${photoFrontPreview ? "border-green-400" : "border-orange-400"}`}
+              >
                 <div className="flex flex-col items-center gap-2">
                   {photoFrontPreview ? (
-                    <img src={photoFrontPreview} alt="Façade" className="w-20 h-20 md:w-24 md:h-24 rounded-md object-cover" />
+                    <img
+                      src={photoFrontPreview}
+                      alt="Façade"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-md object-cover"
+                    />
                   ) : (
                     <div className="bg-orange-500 rounded-full p-2 shadow-sm">
-                      <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"/><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 3v4M8 3v4m-6 4h20"/></svg>
+                      <svg
+                        className="h-6 w-6 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"
+                        />
+                        <path
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M16 3v4M8 3v4m-6 4h20"
+                        />
+                      </svg>
                     </div>
                   )}
-                  <p className="text-xs font-bold text-orange-600">Photo - Façade</p>
+                  <p className="text-xs font-bold text-orange-600">
+                    Photo - Façade
+                  </p>
                   <p className="text-[10px] text-gray-500">PNG, JPG, Max 5MB</p>
                 </div>
               </div>
-              <input id="photo-front" type="file" accept="image/*" onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setPhotoFrontFile(f);
-                if (f) {
-                  const reader = new FileReader();
-                  reader.onload = () => { setPhotoFrontPreview(String(reader.result)); setPhotoFrontUrl(String(reader.result)); };
-                  reader.readAsDataURL(f);
-                } else { setPhotoFrontPreview(""); setPhotoFrontUrl(""); }
-              }} className="hidden" />
+              <input
+                id="photo-front"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setPhotoFrontFile(f);
+                  if (f) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setPhotoFrontPreview(String(reader.result));
+                      setPhotoFrontUrl(String(reader.result));
+                    };
+                    reader.readAsDataURL(f);
+                  } else {
+                    setPhotoFrontPreview("");
+                    setPhotoFrontUrl("");
+                  }
+                }}
+                className="hidden"
+              />
             </label>
 
             <label htmlFor="photo-back" className="block">
-              <div className={`border-2 border-dashed rounded-lg p-3 md:p-4 cursor-pointer hover:border-orange-500 transition-colors text-center bg-orange-100/50 ${photoBackPreview ? 'border-green-400' : 'border-orange-400'}`}>
+              <div
+                className={`border-2 border-dashed rounded-lg p-3 md:p-4 cursor-pointer hover:border-orange-500 transition-colors text-center bg-orange-100/50 ${photoBackPreview ? "border-green-400" : "border-orange-400"}`}
+              >
                 <div className="flex flex-col items-center gap-2">
                   {photoBackPreview ? (
-                    <img src={photoBackPreview} alt="Intérieur" className="w-20 h-20 md:w-24 md:h-24 rounded-md object-cover" />
+                    <img
+                      src={photoBackPreview}
+                      alt="Intérieur"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-md object-cover"
+                    />
                   ) : (
                     <div className="bg-orange-500 rounded-full p-2 shadow-sm">
-                      <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"/><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 3v4M8 3v4m-6 4h20"/></svg>
+                      <svg
+                        className="h-6 w-6 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"
+                        />
+                        <path
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M16 3v4M8 3v4m-6 4h20"
+                        />
+                      </svg>
                     </div>
                   )}
-                  <p className="text-xs font-bold text-orange-600">Photo - Arrière / Intérieur</p>
+                  <p className="text-xs font-bold text-orange-600">
+                    Photo - Arrière / Intérieur
+                  </p>
                   <p className="text-[10px] text-gray-500">PNG, JPG, Max 5MB</p>
                 </div>
               </div>
-              <input id="photo-back" type="file" accept="image/*" onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setPhotoBackFile(f);
-                if (f) {
-                  const reader = new FileReader();
-                  reader.onload = () => { setPhotoBackPreview(String(reader.result)); setPhotoBackUrl(String(reader.result)); };
-                  reader.readAsDataURL(f);
-                } else { setPhotoBackPreview(""); setPhotoBackUrl(""); }
-              }} className="hidden" />
+              <input
+                id="photo-back"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setPhotoBackFile(f);
+                  if (f) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setPhotoBackPreview(String(reader.result));
+                      setPhotoBackUrl(String(reader.result));
+                    };
+                    reader.readAsDataURL(f);
+                  } else {
+                    setPhotoBackPreview("");
+                    setPhotoBackUrl("");
+                  }
+                }}
+                className="hidden"
+              />
             </label>
           </div>
         </div>

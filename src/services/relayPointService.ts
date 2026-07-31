@@ -62,6 +62,21 @@ export async function applyForRelayPoint(
   });
   return unwrapData(res);
 }
+export async function validateRelayPointApplication(
+  applicationId: string,
+  approved: boolean,
+  reason: string,
+  overrides?: { capacity?: number; handlingFee?: number },
+): Promise<ApiResponse<any>> {
+  const res = await apiFetch<ApiResponse<any>>(
+    `/api/relay-points/applications/${applicationId}/validate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ approved, reason, ...overrides }),
+    },
+  );
+  return res;
+}
 
 export async function getRelayPointParcels(relayPointId: string) {
   const res = await apiFetch<ApiResponse<import("@/types/relayPoint").RelayParcelEntry[]>>(
