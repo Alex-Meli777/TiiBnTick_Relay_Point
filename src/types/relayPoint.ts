@@ -11,6 +11,7 @@ export interface RelayPointManager {
 
 export type RelayOwnerCredential = RelayPointManager;
 
+
 export interface RelayPoint {
   id: string;
   name: string;
