@@ -47,32 +47,11 @@ export default function RelayDashboardPage() {
   useEffect(() => {
     if (selectedPointId) {
       fetch(`/api/relay-points/${selectedPointId}/pricing`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Not found");
-          return res.json();
-        })
-        .then((data) => setPricing(data.data))
-        .catch((err) => console.warn("Pricing not yet defined for this point"));
+        .then((res) => res.json())
+        .then((data) => setPricing(data.data));
     }
   }, [selectedPointId]);
 
-  const handleSavePricing = async () => {
-    if (!selectedPointId || !pricing) return;
-
-    try {
-      const res = await fetch(`/api/relay-points/${selectedPointId}/pricing`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pricing),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Politique de prix mise à jour !");
-      }
-    } catch (e) {
-      console.error("Save error", e);
-    }
-  };
   //
   const [activeView, setActiveView] = useState("stock");
 
@@ -248,10 +227,7 @@ export default function RelayDashboardPage() {
                   label="Pénalité de retard / jour (FCFA)"
                   value={pricing?.penaltyPerDay}
                 />
-                <button
-                  className="sm:col-span-2 bg-orange-600 text-white py-3 rounded-xl font-bold"
-                  onClick={handleSavePricing}
-                >
+                <button className="sm:col-span-2 bg-orange-600 text-white py-3 rounded-xl font-bold">
                   Enregistrer la politique
                 </button>
               </div>

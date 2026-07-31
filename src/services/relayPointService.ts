@@ -7,6 +7,7 @@ import type {
   RelayPointSearchResult,
   RelayPointApplication,
 } from "@/types/relayPoint";
+import { RelayPointPricingPolicy } from "@/types/relayPoint";
 
 export async function searchRelayPoints(
   query: RelayPointSearchQuery
@@ -32,6 +33,10 @@ export async function getRelayPoint(id: string): Promise<RelayPoint> {
 
 export interface RelayPointDetail extends RelayPoint {
   manager?: Omit<RelayPointManager, "password" | "managedRelayPointIds">;
+  ownerFirstName?: string;
+  ownerLastName?: string;
+  ownerEmail?: string;
+  ownerPhone?: string;
 }
 
 export async function getRelayPointDetail(id: string): Promise<RelayPointDetail> {
@@ -107,5 +112,28 @@ export const relayPointService = {
     return unwrapData(res);
   },
 };
+
+export async function getRelayPointPricing(
+  relayPointId: string,
+): Promise<RelayPointPricingPolicy> {
+  const res = await apiFetch<ApiResponse<RelayPointPricingPolicy>>(
+    `/api/relay-points/${relayPointId}/pricing`,
+  );
+  return unwrapData(res);
+}
+
+export async function updateRelayPointPricing(
+  relayPointId: string,
+  data: Partial<RelayPointPricingPolicy>,
+): Promise<RelayPointPricingPolicy> {
+  const res = await apiFetch<ApiResponse<RelayPointPricingPolicy>>(
+    `/api/relay-points/${relayPointId}/pricing`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+  );
+  return unwrapData(res);
+}
 
 export default relayPointService;

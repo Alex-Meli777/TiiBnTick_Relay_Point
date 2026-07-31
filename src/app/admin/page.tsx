@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Shield, Lock } from "lucide-react";
-import type { RelayPoint, StoredRelayPointApplication, RelayPointManager } from "@/types/relayPoint";
-import type { RelayPointDetail } from "@/services/relayPointService";
-import { RELAY_POINT_TYPE_LABELS } from "@/types/relayPoint";
-import { getRelayPointDetail, getRelayManagers } from "@/services/relayPointService";
+import type {
+  RelayPoint,
+  StoredRelayPointApplication,
+  RelayPointManager,
+} from "@/types/relayPoint";
+import type { RelayPointDetail} from "@/services/relayPointService";
+import {
+  RELAY_POINT_TYPE_LABELS,
+  RelayPointStatusBackend,
+} from "@/types/relayPoint";
+import {
+  getRelayPointDetail,
+  getRelayManagers,
+  validateRelayPointApplication,
+} from "@/services/relayPointService";
 import RelayPointApplicationForm from "@/components/relay/RelayPointApplicationForm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,7 +34,9 @@ function ToastMsg({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   }, [toast, onClose]);
   if (!toast) return null;
   return (
-    <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white font-medium transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+    <div
+      className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white font-medium transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}
+    >
       {toast.type === "success" ? "✓" : "✗"} {toast.message}
     </div>
   );
@@ -47,7 +60,9 @@ export default function AdminPage() {
     async function loadDashboardStats() {
       try {
         const [pointsRes, appsRes] = await Promise.all([
-          fetch("/api/relay-points?latitude=3.87&longitude=11.52&radiusKm=9999"),
+          fetch(
+            "/api/relay-points?latitude=3.87&longitude=11.52&radiusKm=9999",
+          ),
           fetch("/api/relay-points/applications?status=pending"),
         ]);
 
@@ -55,10 +70,14 @@ export default function AdminPage() {
         const appsData = await appsRes.json();
 
         if (pointsData?.success) {
-          setPointsCount(Array.isArray(pointsData.data) ? pointsData.data.length : 0);
+          setPointsCount(
+            Array.isArray(pointsData.data) ? pointsData.data.length : 0,
+          );
         }
         if (appsData?.success) {
-          setApplicationsCount(Array.isArray(appsData.data) ? appsData.data.length : 0);
+          setApplicationsCount(
+            Array.isArray(appsData.data) ? appsData.data.length : 0,
+          );
         }
       } catch (error) {
         console.error("Unable to load dashboard stats", error);
@@ -98,13 +117,20 @@ export default function AdminPage() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-lg">
               <Shield className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-bold text-[#1e2a4a] mb-2">Espace Admin</h1>
-            <p className="text-sm text-[#5a6b8a]">Connectez-vous pour gérer les points relais.</p>
+            <h1 className="text-3xl font-bold text-[#1e2a4a] mb-2">
+              Espace Admin
+            </h1>
+            <p className="text-sm text-[#5a6b8a]">
+              Connectez-vous pour gérer les points relais.
+            </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label htmlFor="admin-password" className="block text-sm font-medium text-[#1e2a4a] mb-2">
+              <label
+                htmlFor="admin-password"
+                className="block text-sm font-medium text-[#1e2a4a] mb-2"
+              >
                 Mot de passe
               </label>
               <div className="relative">
@@ -133,8 +159,13 @@ export default function AdminPage() {
           </form>
 
           <div className="mt-7 rounded-3xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            <p className="font-medium text-gray-800">Gestion sécurisée des points relais</p>
-            <p className="mt-2">Cet espace est réservé aux administrateurs. Vos actions sont enregistrées.</p>
+            <p className="font-medium text-gray-800">
+              Gestion sécurisée des points relais
+            </p>
+            <p className="mt-2">
+              Cet espace est réservé aux administrateurs. Vos actions sont
+              enregistrées.
+            </p>
           </div>
         </div>
       </div>
@@ -149,12 +180,22 @@ export default function AdminPage() {
       <header className="sticky top-0 z-50 w-full border-b border-orange-100 bg-white shadow-sm">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">TiiBnTick Admin</p>
-            <h1 className="text-3xl font-black text-gray-900 md:text-4xl">Tableau de bord point relais</h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-600">Gérez les points relais, validez les candidatures et suivez l’activité depuis un seul espace.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
+              TiiBnTick Admin
+            </p>
+            <h1 className="text-3xl font-black text-gray-900 md:text-4xl">
+              Tableau de bord point relais
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-gray-600">
+              Gérez les points relais, validez les candidatures et suivez
+              l’activité depuis un seul espace.
+            </p>
           </div>
           <button
-            onClick={async () => { await fetch("/api/admin-auth/login", { method: "DELETE" }); setConnected(false); }}
+            onClick={async () => {
+              await fetch("/api/admin-auth/login", { method: "DELETE" });
+              setConnected(false);
+            }}
             className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200/50 transition hover:opacity-95"
           >
             Déconnexion
@@ -168,17 +209,19 @@ export default function AdminPage() {
             <div className="rounded-[32px] border border-orange-100 bg-white/90 p-6 shadow-sm shadow-orange-50">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-orange-600">Action rapide</p>
-                  <h2 className="mt-2 text-2xl font-bold text-gray-900">Administration</h2>
+                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-orange-600">
+                    Action rapide
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                    Administration
+                  </h2>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {(
-                    [
-                      { label: "Points", value: "points" as Tab },
-                      { label: "Candidatures", value: "applications" as Tab },
-                      { label: "Créer", value: "creer" as Tab },
-                    ]
-                  ).map((item) => (
+                  {[
+                    { label: "Points", value: "points" as Tab },
+                    { label: "Candidatures", value: "applications" as Tab },
+                    { label: "Créer", value: "creer" as Tab },
+                  ].map((item) => (
                     <button
                       key={item.label}
                       onClick={() => setTab(item.value)}
@@ -193,34 +236,73 @@ export default function AdminPage() {
 
             <div className="rounded-[32px] border border-orange-100 bg-white/90 p-6 shadow-sm shadow-orange-50">
               {tab === "points" && <PointsTab showToast={showToast} />}
-              {tab === "applications" && <ApplicationsTab showToast={showToast} />}
-              {tab === "creer" && <CreerTab showToast={showToast} onCreated={() => setTab("points")} />}
+              {tab === "applications" && (
+                <ApplicationsTab showToast={showToast} />
+              )}
+              {tab === "creer" && (
+                <CreerTab
+                  showToast={showToast}
+                  onCreated={() => setTab("points")}
+                />
+              )}
             </div>
           </section>
 
           <aside className="space-y-6">
             <div className="rounded-[32px] border border-orange-100 bg-white/90 p-6 shadow-sm shadow-orange-50">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">Statut</p>
-              <h3 className="mt-3 text-lg font-bold text-gray-900">Vue globale</h3>
-              <p className="mt-2 text-sm text-gray-600">Résumé rapide des candidats, des points relais et des actions à valider.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">
+                Statut
+              </p>
+              <h3 className="mt-3 text-lg font-bold text-gray-900">
+                Vue globale
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Résumé rapide des candidats, des points relais et des actions à
+                valider.
+              </p>
               <div className="mt-5 grid gap-3">
                 <div className="rounded-3xl border border-orange-100 bg-orange-50 p-4">
-                  <p className="text-sm font-medium text-orange-700">Points relais actifs</p>
-                  <p className="mt-2 text-3xl font-black text-gray-900">{pointsCount}</p>
+                  <p className="text-sm font-medium text-orange-700">
+                    Points relais actifs
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-gray-900">
+                    {pointsCount}
+                  </p>
                 </div>
                 <div className="rounded-3xl border border-orange-100 bg-orange-50 p-4">
-                  <p className="text-sm font-medium text-orange-700">Candidatures en attente</p>
-                  <p className="mt-2 text-3xl font-black text-gray-900">{applicationsCount}</p>
+                  <p className="text-sm font-medium text-orange-700">
+                    Candidatures en attente
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-gray-900">
+                    {applicationsCount}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="rounded-[32px] border border-orange-100 bg-white/90 p-6 shadow-sm shadow-orange-50">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">Aide rapide</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">
+                Aide rapide
+              </p>
               <div className="mt-4 space-y-3 text-sm text-gray-600">
-                <p>Utilisez l’onglet <span className="font-semibold text-gray-900">Points relais</span> pour modifier ou supprimer les points actifs.</p>
-                <p>Validez les candidatures dans <span className="font-semibold text-gray-900">Candidatures</span>.</p>
-                <p>Créez un nouveau point relais depuis <span className="font-semibold text-gray-900">Créer</span>.</p>
+                <p>
+                  Utilisez l’onglet{" "}
+                  <span className="font-semibold text-gray-900">
+                    Points relais
+                  </span>{" "}
+                  pour modifier ou supprimer les points actifs.
+                </p>
+                <p>
+                  Validez les candidatures dans{" "}
+                  <span className="font-semibold text-gray-900">
+                    Candidatures
+                  </span>
+                  .
+                </p>
+                <p>
+                  Créez un nouveau point relais depuis{" "}
+                  <span className="font-semibold text-gray-900">Créer</span>.
+                </p>
               </div>
             </div>
           </aside>
@@ -232,23 +314,33 @@ export default function AdminPage() {
 
 // ─── Onglet : Liste des points relais ─────────────────────────────────────────
 
-function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+function PointsTab({
+  showToast,
+}: {
+  showToast: (m: string, t: "success" | "error") => void;
+}) {
   const [points, setPoints] = useState<RelayPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [editPoint, setEditPoint] = useState<RelayPoint | null>(null);
   const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
-  const [expandedPointDetails, setExpandedPointDetails] = useState<Record<string, RelayPointDetail>>({});
+  const [expandedPointDetails, setExpandedPointDetails] = useState<
+    Record<string, RelayPointDetail>
+  >({});
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editCapacity, setEditCapacity] = useState("");
-  const [editStatus, setEditStatus] = useState<RelayPoint["status"]>("active");
+  const [editStatus, setEditStatus] = useState<RelayPoint["status"]>(
+    RelayPointStatusBackend.APPROVED,
+  );
   const [editFee, setEditFee] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/relay-points?latitude=3.87&longitude=11.52&radiusKm=9999");
+      const res = await fetch(
+        "/api/relay-points?latitude=3.87&longitude=11.52&radiusKm=9999",
+      );
       const data = await res.json();
       if (data.success) setPoints(data.data);
     } finally {
@@ -256,7 +348,9 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function toggleDetail(id: string) {
     if (expandedPointId === id) {
@@ -293,7 +387,12 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
       const res = await fetch(`/api/relay-points/${editPoint.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName, capacity: Number(editCapacity), status: editStatus, handlingFee: Number(editFee) }),
+        body: JSON.stringify({
+          name: editName,
+          capacity: Number(editCapacity),
+          status: editStatus,
+          handlingFee: Number(editFee),
+        }),
       });
       if (res.ok) {
         showToast("Point relais modifié avec succès !", "success");
@@ -309,7 +408,8 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Supprimer "${name}" ? Cette action est irréversible.`)) return;
+    if (!confirm(`Supprimer "${name}" ? Cette action est irréversible.`))
+      return;
     const res = await fetch(`/api/relay-points/${id}`, { method: "DELETE" });
     const data = await res.json();
     if (data.success) {
@@ -320,17 +420,27 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
     }
   }
 
-  if (loading) return <div className="text-center py-12 text-gray-400">Chargement...</div>;
+  if (loading)
+    return <div className="text-center py-12 text-gray-400">Chargement...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">Points relais ({points.length})</h2>
-        <button onClick={load} className="text-sm text-blue-600 hover:underline">↻ Actualiser</button>
+        <h2 className="text-lg font-semibold text-gray-800">
+          Points relais ({points.length})
+        </h2>
+        <button
+          onClick={load}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          ↻ Actualiser
+        </button>
       </div>
 
       {points.length === 0 && (
-        <div className="text-center py-12 text-gray-400">Aucun point relais. Créez-en un dans l'onglet "Créer".</div>
+        <div className="text-center py-12 text-gray-400">
+          Aucun point relais. Créez-en un dans l'onglet "Créer".
+        </div>
       )}
 
       <div className="grid gap-4">
@@ -351,23 +461,42 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
                   className="flex-1 text-left"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-800 truncate">{p.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.status === "active" ? "bg-green-100 text-green-700" : p.status === "suspended" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
-                      {p.status === "active" ? "Actif" : p.status === "suspended" ? "Suspendu" : "En attente"}
+                    <span className="font-semibold text-gray-800 truncate">
+                      {p.name}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.status === RelayPointStatusBackend.APPROVED ? "bg-green-100 text-green-700" : p.status === RelayPointStatusBackend.SUSPENDED ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}
+                    >
+                      {p.status === RelayPointStatusBackend.APPROVED
+                        ? "Actif"
+                        : p.status === RelayPointStatusBackend.SUSPENDED
+                          ? "Suspendu"
+                          : "En attente"}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500">{p.address}, {p.city} · {RELAY_POINT_TYPE_LABELS[p.type]}</p>
-                  <p className="text-xs text-gray-400 mt-1">Capacité : {p.currentLoad}/{p.capacity} · Frais : {p.handlingFee} FCFA · ID : {p.id}</p>
+                  <p className="text-sm text-gray-500">
+                    {p.address}, {p.city} · {RELAY_POINT_TYPE_LABELS[p.type]}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Capacité : {p.currentLoad}/{p.capacity} · Frais :{" "}
+                    {p.handlingFee} FCFA · ID : {p.id}
+                  </p>
                 </button>
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={(e) => { e.stopPropagation(); openEdit(p); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(p);
+                    }}
                     className="text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg transition"
                   >
                     ✏️ Modifier
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(p.id, p.name); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(p.id, p.name);
+                    }}
                     className="text-sm bg-red-200 hover:bg-red-300 text-red-700 px-3 py-1.5 rounded-lg transition font-bold"
                   >
                     🗑 Supprimer
@@ -378,56 +507,133 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
               {isExpanded && (
                 <div className="mt-5 border-t border-gray-100 pt-5 text-sm text-gray-700">
                   {isLoadingDetails ? (
-                    <div className="text-gray-500">Chargement des détails...</div>
+                    <div className="text-gray-500">
+                      Chargement des détails...
+                    </div>
                   ) : detail ? (
                     <>
                       <div className="grid gap-4 lg:grid-cols-2">
                         <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations du gestionnaire</h4>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                            Informations du gestionnaire
+                          </h4>
                           {detail.manager ? (
                             <div className="space-y-3 text-sm text-gray-700">
-                              <p><span className="font-medium">Nom :</span> {detail.manager.fullName}</p>
-                              <p><span className="font-medium">Téléphone :</span> {detail.manager.phone}</p>
-                              <p><span className="font-medium">Email :</span> {detail.manager.email}</p>
-                              <p className="text-xs text-gray-500">Mot de passe masqué pour sécurité.</p>
+                              <p>
+                                <span className="font-medium">Nom :</span>{" "}
+                                {detail.manager.fullName}
+                              </p>
+                              <p>
+                                <span className="font-medium">Téléphone :</span>{" "}
+                                {detail.manager.phone}
+                              </p>
+                              <p>
+                                <span className="font-medium">Email :</span>{" "}
+                                {detail.manager.email}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Mot de passe masqué pour sécurité.
+                              </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-600">Aucun gestionnaire associé à ce point relais.</p>
+                            <p className="text-sm text-gray-600">
+                              Aucun gestionnaire associé à ce point relais.
+                            </p>
                           )}
                         </div>
 
                         <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations générales</h4>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                            Informations générales
+                          </h4>
                           <div className="space-y-2 text-sm text-gray-700">
-                            <p><span className="font-medium">Type :</span> {RELAY_POINT_TYPE_LABELS[detail.type]}</p>
-                            <p><span className="font-medium">Statut :</span> {detail.status === "active" ? "Actif" : detail.status === "suspended" ? "Suspendu" : "En attente"}</p>
-                            <p><span className="font-medium">Capacité :</span> {detail.currentLoad}/{detail.capacity}</p>
-                            <p><span className="font-medium">Frais de manutention :</span> {detail.handlingFee} FCFA</p>
-                            <p><span className="font-medium">Adresse :</span> {detail.address}, {detail.city}, {detail.region}, {detail.country}</p>
-                            <p><span className="font-medium">Lieu-dit :</span> {detail.lieuDit || "—"}</p>
-                            <p><span className="font-medium">Coordonnées :</span> {detail.latitude}, {detail.longitude}</p>
+                            <p>
+                              <span className="font-medium">Type :</span>{" "}
+                              {RELAY_POINT_TYPE_LABELS[detail.type]}
+                            </p>
+                            <p>
+                              <span className="font-medium">Statut :</span>{" "}
+                              {detail.status ===
+                              RelayPointStatusBackend.APPROVED
+                                ? "Actif"
+                                : detail.status ===
+                                    RelayPointStatusBackend.SUSPENDED
+                                  ? "Suspendu"
+                                  : "En attente"}
+                            </p>
+                            <p>
+                              <span className="font-medium">Capacité :</span>{" "}
+                              {detail.currentLoad}/{detail.capacity}
+                            </p>
+                            <p>
+                              <span className="font-medium">
+                                Frais de manutention :
+                              </span>{" "}
+                              {detail.handlingFee} FCFA
+                            </p>
+                            <p>
+                              <span className="font-medium">Adresse :</span>{" "}
+                              {detail.address}, {detail.city}, {detail.region},{" "}
+                              {detail.country}
+                            </p>
+                            <p>
+                              <span className="font-medium">Lieu-dit :</span>{" "}
+                              {detail.lieuDit || "—"}
+                            </p>
+                            <p>
+                              <span className="font-medium">Coordonnées :</span>{" "}
+                              {detail.latitude}, {detail.longitude}
+                            </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-5 rounded-3xl border border-gray-200 bg-gray-50 p-5">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Informations d’exploitation</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                          Informations d’exploitation
+                        </h4>
                         <div className="grid gap-4 lg:grid-cols-2 text-sm text-gray-700">
                           <div>
-                            <p className="font-medium text-gray-900">Responsable du point relais</p>
-                            <p className="mt-2"><span className="font-medium">Nom du propriétaire :</span> {detail.ownerName}</p>
-                            <p><span className="font-medium">Téléphone :</span> {detail.ownerPhone}</p>
-                            {detail.ownerEmail && <p><span className="font-medium">Email :</span> {detail.ownerEmail}</p>}
+                            <p className="font-medium text-gray-900">
+                              Responsable du point relais
+                            </p>
+                            <p className="mt-2">
+                              <span className="font-medium">
+                                Nom du propriétaire :
+                              </span>{" "}
+                              {`${detail.ownerFirstName} ${detail.ownerLastName}`}
+                            </p>
+                            <p>
+                              <span className="font-medium">Téléphone :</span>{" "}
+                              {detail.ownerPhone}
+                            </p>
+                            {detail.ownerEmail && (
+                              <p>
+                                <span className="font-medium">Email :</span>{" "}
+                                {detail.ownerEmail}
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">Horaires d’ouverture</p>
+                            <p className="font-medium text-gray-900">
+                              Horaires d’ouverture
+                            </p>
                             <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                              {detail.openingHours.map((slot: RelayPoint["openingHours"][number]) => (
-                                <li key={slot.day} className="flex justify-between border-b border-gray-200 pb-1">
-                                  <span className="capitalize">{slot.day}</span>
-                                  <span>{slot.open} — {slot.close}</span>
-                                </li>
-                              ))}
+                              {detail.openingHours.map(
+                                (slot: RelayPoint["openingHours"][number]) => (
+                                  <li
+                                    key={slot.day}
+                                    className="flex justify-between border-b border-gray-200 pb-1"
+                                  >
+                                    <span className="capitalize">
+                                      {slot.day}
+                                    </span>
+                                    <span>
+                                      {slot.open} — {slot.close}
+                                    </span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         </div>
@@ -435,17 +641,28 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
 
                       {detail.photos?.length ? (
                         <div className="mt-5 rounded-3xl border border-gray-200 bg-gray-50 p-5">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Photos</h4>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                            Photos
+                          </h4>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            {detail.photos.map((photo: string, index: number) => (
-                              <img key={index} src={photo} alt={`Photo ${index + 1}`} className="h-40 w-full rounded-2xl object-cover" />
-                            ))}
+                            {detail.photos.map(
+                              (photo: string, index: number) => (
+                                <img
+                                  key={index}
+                                  src={photo}
+                                  alt={`Photo ${index + 1}`}
+                                  className="h-40 w-full rounded-2xl object-cover"
+                                />
+                              ),
+                            )}
                           </div>
                         </div>
                       ) : null}
                     </>
                   ) : (
-                    <div className="text-gray-500">Aucun détail disponible pour ce point relais.</div>
+                    <div className="text-gray-500">
+                      Aucun détail disponible pour ce point relais.
+                    </div>
                   )}
                 </div>
               )}
@@ -456,32 +673,71 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
       {editPoint && (
         <div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4 text-gray-800">Modifier le point relais</h3>
+            <h3 className="text-lg font-bold mb-4 text-gray-800">
+              Modifier le point relais
+            </h3>
             <div className="space-y-3">
               <div>
                 <label className="text-sm text-gray-600 mb-1 block">Nom</label>
-                <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
               </div>
               <div>
-                <label className="text-sm text-gray-600 mb-1 block">Capacité</label>
-                <input type="number" value={editCapacity} onChange={e => setEditCapacity(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <label className="text-sm text-gray-600 mb-1 block">
+                  Capacité
+                </label>
+                <input
+                  type="number"
+                  value={editCapacity}
+                  onChange={(e) => setEditCapacity(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
               </div>
               <div>
-                <label className="text-sm text-gray-600 mb-1 block">Frais de manutention (FCFA)</label>
-                <input type="number" value={editFee} onChange={e => setEditFee(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <label className="text-sm text-gray-600 mb-1 block">
+                  Frais de manutention (FCFA)
+                </label>
+                <input
+                  type="number"
+                  value={editFee}
+                  onChange={(e) => setEditFee(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
               </div>
               <div>
-                <label className="text-sm text-gray-600 mb-1 block">Statut</label>
-                <select value={editStatus} onChange={e => setEditStatus(e.target.value as RelayPoint["status"])} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                <label className="text-sm text-gray-600 mb-1 block">
+                  Statut
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value as RelayPoint["status"])
+                  }
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
                   <option value="active">Actif</option>
                   <option value="suspended">Suspendu</option>
-                  <option value="pending_validation">En attente de validation</option>
+                  <option value="pending_validation">
+                    En attente de validation
+                  </option>
                 </select>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setEditPoint(null)} className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50">Annuler</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              <button
+                onClick={() => setEditPoint(null)}
+                className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
                 {saving ? "Enregistrement..." : "Enregistrer"}
               </button>
             </div>
@@ -494,39 +750,60 @@ function PointsTab({ showToast }: { showToast: (m: string, t: "success" | "error
 
 // ─── Onglet : Candidatures ────────────────────────────────────────────────────
 
-function ApplicationsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
-  const [applications, setApplications] = useState<StoredRelayPointApplication[]>([]);
+function ApplicationsTab({
+  showToast,
+}: {
+  showToast: (m: string, t: "success" | "error") => void;
+}) {
+  const [applications, setApplications] = useState<
+    StoredRelayPointApplication[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
-  const [expandedApplicationId, setExpandedApplicationId] = useState<string | null>(null);
-const [reason, setReason] = useState("");
-const [finalCapacity, setFinalCapacity] = useState(20);
-const handleProcessValidation = async (approved: boolean) => {
-  if (!validationModal) return;
-
-  try {
-    const res = await validateRelayPointApplication(
-      validationModal.id,
-      approved,
-      reason,
-      approved ? { capacity: finalCapacity } : undefined,
-    );
-
-    if (res.success) {
-      showToast(approved ? "Validé !" : "Refusé", "success");
-      load(); // Refresh list
-      setValidationModal(null);
-      setReason("");
+  const [filter, setFilter] = useState<string>(RelayPointStatusBackend.PENDING);
+  const [expandedApplicationId, setExpandedApplicationId] = useState<
+    string | null
+  >(null);
+  const [validationModal, setValidationModal] = useState<{
+    id: string;
+    mode: "approve" | "reject";
+  } | null>(null);
+  const [reason, setReason] = useState("");
+  const [finalCapacity, setFinalCapacity] = useState(20);
+  const handleProcessValidation = async (approved: boolean) => {
+    if (!validationModal) return;
+    if (!reason.trim()) {
+      showToast("Un motif est requis", "error");
+      return;
     }
-  } catch (err) {
-    showToast("Erreur de validation", "error");
-  }
-};
+    try {
+      const res = await validateRelayPointApplication(
+        validationModal.id,
+        approved,
+        reason,
+        approved ? { capacity: finalCapacity } : undefined,
+      );
+
+      if (res.success) {
+        showToast(
+          approved ? "Point relais approuvé !" : "Candidature refusée",
+          "success",
+        );
+        setValidationModal(null);
+        setReason("");
+        load(); // Refresh list
+      }
+    } catch (err) {
+      showToast("Erreur de validation", "error");
+    }
+  };
 
   async function load() {
     setLoading(true);
     try {
-      const url = filter === "all" ? "/api/relay-points/applications" : `/api/relay-points/applications?status=${filter}`;
+      const url =
+        filter === "all"
+          ? "/api/relay-points/applications"
+          : `/api/relay-points/applications?status=${filter}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) setApplications(data.data);
@@ -535,62 +812,52 @@ const handleProcessValidation = async (approved: boolean) => {
     }
   }
 
-  useEffect(() => { load(); }, [filter]);
-
-  async function handleApprove(id: string) {
-    const res = await fetch(`/api/relay-points/applications/${id}/approve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast("Candidature approuvée — point relais créé !", "success");
-      load();
-    } else {
-      showToast(data.error ?? "Erreur", "error");
-    }
-  }
-
-  async function handleReject(id: string) {
-    if (!confirm("Rejeter cette candidature ?")) return;
-    const res = await fetch(`/api/relay-points/applications/${id}/reject`, { method: "POST" });
-    const data = await res.json();
-    if (data.success) {
-      showToast("Candidature refusée.", "success");
-      load();
-    } else {
-      showToast(data.error ?? "Erreur", "error");
-    }
-  }
+  useEffect(() => {
+    load();
+  }, [filter]);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Candidatures</h2>
         <div className="flex gap-2 flex-wrap">
-          {(["pending", "approved", "rejected", "all"] as const).map((f) => (
+          {[
+            { label: "En attente", val: RelayPointStatusBackend.PENDING },
+            { label: "Approuvées", val: RelayPointStatusBackend.APPROVED },
+            { label: "Refusées", val: RelayPointStatusBackend.REJECTED },
+            { label: "Toutes", val: "all" },
+          ].map((f) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`text-xs px-3 py-1.5 rounded-lg transition ${filter === f ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              key={f.val}
+              onClick={() => setFilter(f.val)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition ${filter === f.val ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
             >
-              {f === "pending" ? "En attente" : f === "approved" ? "Approuvées" : f === "rejected" ? "Refusées" : "Toutes"}
+              {f.label}
             </button>
           ))}
         </div>
       </div>
-
-      {loading && <div className="text-center py-12 text-gray-400">Chargement...</div>}
-
+      {loading && (
+        <div className="text-center py-12 text-gray-400">Chargement...</div>
+      )}
       {!loading && applications.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          {filter === "pending" ? "Aucune candidature en attente." : "Aucune candidature dans cette catégorie."}
+          {filter === RelayPointStatusBackend.PENDING
+            ? "Aucune candidature en attente."
+            : "Aucune candidature dans cette catégorie."}
           <br />
-          <span className="text-sm">Pour tester, utilisez la page <a href="/relay-points/postuler" target="_blank" className="text-orange-600 underline">Postuler</a></span>
+          <span className="text-sm">
+            Pour tester, utilisez la page{" "}
+            <a
+              href="/relay-points/postuler"
+              target="_blank"
+              className="text-orange-600 underline"
+            >
+              Postuler
+            </a>
+          </span>
         </div>
       )}
-
       <div className="grid gap-4">
         {applications.map((a) => {
           const isExpanded = expandedApplicationId === a.id;
@@ -613,11 +880,11 @@ const handleProcessValidation = async (approved: boolean) => {
                         {a.businessName}
                       </span>
                       <span
-                        className={`text-xs px-2 py-1 rounded-full font-semibold ${a.status === "PENDING" ? "bg-yellow-100 text-yellow-700" : a.status === "APPROVED" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                        className={`text-xs px-2 py-1 rounded-full font-semibold ${a.status === RelayPointStatusBackend.PENDING ? "bg-yellow-100 text-yellow-700" : a.status === RelayPointStatusBackend.APPROVED ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
                       >
-                        {a.status === "PENDING"
+                        {a.status === RelayPointStatusBackend.PENDING
                           ? "En attente"
-                          : a.status === "APPROVED"
+                          : a.status === RelayPointStatusBackend.APPROVED
                             ? "Approuvée"
                             : "Refusée"}
                       </span>
@@ -759,7 +1026,9 @@ const handleProcessValidation = async (approved: boolean) => {
                     {a.status === "PENDING" && (
                       <>
                         <button
-                          onClick={() => handleReject(a.id)}
+                          onClick={() =>
+                            setValidationModal({ id: a.id, mode: "reject" })
+                          }
                           className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
                         >
                           ❌ Refuser
@@ -781,14 +1050,85 @@ const handleProcessValidation = async (approved: boolean) => {
           );
         })}
       </div>
+      {/* FIX: Moved the modal outside the list and fixed the formatting */}
+      {validationModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold mb-4">
+              {validationModal.mode === "approve"
+                ? "Approuver la création"
+                : "Refuser la candidature"}
+            </h3>
+            <div className="space-y-4">
+              {validationModal.mode === "approve" && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Capacité autorisée (colis)
+                  </label>
+                  <input
+                    type="number"
+                    value={finalCapacity}
+                    onChange={(e) => setFinalCapacity(Number(e.target.value))}
+                    className="w-full border rounded-xl px-3 py-2 mt-1"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Motif / Commentaire
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={
+                    validationModal.mode === "approve"
+                      ? "Ex: Emplacement validé..."
+                      : "Ex: Espace de stockage insuffisant..."
+                  }
+                  className="w-full border rounded-xl px-3 py-2 h-24 mt-1"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setValidationModal(null)}
+                className="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-600"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() =>
+                  handleProcessValidation(validationModal.mode === "approve")
+                }
+                className={`flex-1 py-3 rounded-xl text-white font-bold ${validationModal.mode === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Onglet : Créer un point relais ──────────────────────────────────────────
 
-function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success" | "error") => void; onCreated: () => void }) {
-  const [managers, setManagers] = useState<Array<Pick<RelayPointManager, "id" | "firstName" | "lastName" | "phone" | "email">>>([]);
+function CreerTab({
+  showToast,
+  onCreated,
+}: {
+  showToast: (m: string, t: "success" | "error") => void;
+  onCreated: () => void;
+}) {
+  const [managers, setManagers] = useState<
+    Array<
+      Pick<
+        RelayPointManager,
+        "id" | "firstName" | "lastName" | "phone" | "email"
+      >
+    >
+  >([]);
   const [loadingManagers, setLoadingManagers] = useState(true);
 
   useEffect(() => {
@@ -796,13 +1136,15 @@ function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success
     getRelayManagers()
       .then((list) => {
         if (!mounted) return;
-        setManagers(list.map((manager) => ({
-          id: manager.id,
-          firstName: manager.firstName,
-          lastName: manager.lastName,
-          phone: manager.phone,
-          email: manager.email,
-        })));
+        setManagers(
+          list.map((manager) => ({
+            id: manager.id,
+            firstName: manager.firstName,
+            lastName: manager.lastName,
+            phone: manager.phone,
+            email: manager.email,
+          })),
+        );
       })
       .finally(() => {
         if (mounted) setLoadingManagers(false);
@@ -814,9 +1156,12 @@ function CreerTab({ showToast, onCreated }: { showToast: (m: string, t: "success
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">Créer un nouveau point relais</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+        Créer un nouveau point relais
+      </h2>
       <p className="mb-6 text-sm text-gray-500">
-        Créez un point relais pour un gestionnaire existant ou ajoutez un nouveau manager directement depuis l’espace admin.
+        Créez un point relais pour un gestionnaire existant ou ajoutez un
+        nouveau manager directement depuis l’espace admin.
       </p>
       {loadingManagers ? (
         <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">

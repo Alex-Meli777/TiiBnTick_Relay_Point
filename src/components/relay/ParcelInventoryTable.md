@@ -1,10 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type {
-  RelayParcelEntry,
-  RelayPointPricingPolicy,
-} from "@/types/relayPoint";
+import type { RelayParcelEntry } from "@/types/relayPoint";
 import { ParcelStatusBadge } from "./RelayStatusBadge";
 import { formatDate } from "@/lib/utils";
 
@@ -12,14 +9,12 @@ interface ParcelInventoryTableProps {
   parcels: RelayParcelEntry[];
   onDeposit?: (parcel: RelayParcelEntry) => void;
   onPickup?: (parcel: RelayParcelEntry) => void;
-  policy?: RelayPointPricingPolicy | null;
 }
 
 export default function ParcelInventoryTable({
   parcels,
   onDeposit,
   onPickup,
-  policy,
 }: ParcelInventoryTableProps) {
   const atHub = parcels.filter((p) => p.status === "AT_HUB");
 
@@ -52,8 +47,8 @@ export default function ParcelInventoryTable({
         <tbody className="divide-y divide-gray-50">
           {parcels.map((parcel) => {
             // --- CALCULATION LOGIC HERE ---
-            const grace = policy?.gracePeriodDays ?? 2;
-            const penaltyRate = policy?.penaltyPerDay ?? 100;
+            const gracePeriod = 2; // This should ideally come from props.policy
+            const penaltyPerDay = 100;
 
             let penalty = 0;
             if (parcel.depositedAt && parcel.status === "AT_HUB") {
@@ -61,8 +56,8 @@ export default function ParcelInventoryTable({
                 (Date.now() - new Date(parcel.depositedAt).getTime()) /
                   (1000 * 60 * 60 * 24),
               );
-              if (daysInStock > grace) {
-                penalty = (daysInStock - grace) * penaltyRate;
+              if (daysInStock > gracePeriod) {
+                penalty = (daysInStock - gracePeriod) * penaltyPerDay;
               }
             }
 

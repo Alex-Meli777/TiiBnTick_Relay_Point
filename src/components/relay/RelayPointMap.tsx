@@ -35,19 +35,25 @@ export default function RelayPointMap({
   zoom = 13,
 }: RelayPointMapProps) {
   const relayMarkers: MapMarker[] = points.map((p) => {
-    const full = p.currentLoad >= p.capacity;
+    const isFull = p.currentLoad >= p.capacity;
     return {
       id: p.id,
       latitude: p.latitude,
       longitude: p.longitude,
-      color: full ? "red" : "green",
+      // Visual cue: Red for full, Green for available
+      color: isFull ? "#ef4444" : "#10b981",
       label: p.name,
       popupContent: (
-        <div className="text-sm">
-          <p className="font-semibold">{p.name}</p>
-          <p className="text-gray-500">{RELAY_POINT_TYPE_LABELS[p.type]}</p>
-          <p className="text-gray-500">{p.distanceKm} km</p>
-          <p className="text-orange-600">{formatFcfa(p.handlingFee)}</p>
+        <div className="text-sm p-1">
+          <p className="font-bold border-b mb-1">{p.name}</p>
+          <p className={isFull ? "text-red-500 font-bold" : "text-green-600"}>
+            {isFull
+              ? "🚫 Complet"
+              : `✅ Disponible (${p.capacity - p.currentLoad} places)`}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Frais: {p.handlingFee} FCFA
+          </p>
         </div>
       ),
     };
@@ -59,7 +65,9 @@ export default function RelayPointMap({
     longitude: center.longitude,
     label: "Centre de recherche",
     color: "blue",
-    popupContent: <div className="text-sm font-medium">Centre de recherche</div>,
+    popupContent: (
+      <div className="text-sm font-medium">Centre de recherche</div>
+    ),
   };
 
   return (
@@ -72,7 +80,9 @@ export default function RelayPointMap({
       onMarkerClick={(id) => {
         if (id !== "selected") onSelect?.(id);
       }}
-      onMapClick={(latitude, longitude) => onCenterChange?.({ latitude, longitude })}
+      onMapClick={(latitude, longitude) =>
+        onCenterChange?.({ latitude, longitude })
+      }
     />
   );
 }

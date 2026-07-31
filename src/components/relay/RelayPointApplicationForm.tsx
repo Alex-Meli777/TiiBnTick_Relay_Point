@@ -398,7 +398,7 @@ export default function RelayPointApplicationForm({
                   required
                   value={form.manager.phone}
                   onChange={(e) => updateManager("phone", e.target.value)}
-                  placeholder="+2376XXXXXXXX"
+                  placeholder=" +ind phone"
                 />
                 <CustomInput
                   label="Email"

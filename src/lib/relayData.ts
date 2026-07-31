@@ -1,19 +1,21 @@
 import { getMutableStore } from "@/mocks/relayPointsSeed";
 import { calculateDistanceKm, generateId } from "@/lib/utils";
-import type {
-  RelayPoint,
-  RelayPointManager,
-  RelayPointSearchQuery,
-  RelayPointSearchResult,
-  RelayPointApplication,
-  StoredRelayPointApplication,
-  RelayParcelEntry,
-  HandoverEvent,
-  RelayNotification,
-  DepositRequest,
-  PickupRequest,
-  DeliveryTrackingSession,
-  ProofOfDeliverySubmission,
+import {
+  type RelayPoint,
+  type RelayPointManager,
+  type RelayPointSearchQuery,
+  type RelayPointSearchResult,
+  type RelayPointApplication,
+  type StoredRelayPointApplication,
+  type RelayParcelEntry,
+  type HandoverEvent,
+  type RelayNotification,
+  type DepositRequest,
+  type PickupRequest,
+  type DeliveryTrackingSession,
+  type ProofOfDeliverySubmission,
+  type RelayPointPricingPolicy,
+  RelayPointStatusBackend,
 } from "@/types/relayPoint";
 
 const OTP_MAP: Record<string, string> = {
@@ -22,6 +24,30 @@ const OTP_MAP: Record<string, string> = {
   "TBT-CM-2026-00005": "551234",
 };
 
+export function calculateParcelFees(
+  parcel: RelayParcelEntry,
+  policy: RelayPointPricingPolicy,
+) {
+  if (parcel.status !== "AT_HUB" || !parcel.depositedAt)
+    return { penalty: 0, days: 0 };
+
+  const start = new Date(parcel.depositedAt).getTime();
+  const now = new Date().getTime();
+  const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+
+  let penalty = 0;
+  if (diffDays > policy.gracePeriodDays) {
+    penalty = (diffDays - policy.gracePeriodDays) * policy.penaltyPerDay;
+  }
+
+  return { penalty, days: diffDays };
+}
+
+// Add this to your mock API handlers to return pricing
+export function getPricingByRelayId(relayPointId: string): RelayPointPricingPolicy | undefined {
+  return getMutableStore().relayPointPricingPolicies.find(p => p.relayPointId === relayPointId);
+}
+
 export function searchRelayPoints(
   query: RelayPointSearchQuery
 ): RelayPointSearchResult[] {
@@ -29,7 +55,7 @@ export function searchRelayPoints(
   const radius = query.radiusKm ?? 5;
 
   let results = store.relayPoints
-    .filter((rp) => rp.status === "active")
+    .filter((rp) => rp.status === RelayPointStatusBackend.APPROVED)
     .map((rp) => ({
       ...rp,
       distanceKm: calculateDistanceKm(
@@ -117,7 +143,7 @@ export function applyForRelayPoint(
     ...data,
     id: generateId("app"),
     submittedAt: new Date().toISOString(),
-    status: "pending",
+    status: RelayPointStatusBackend.PENDING,
   };
   store.applications.push(application);
   return application;
@@ -183,7 +209,7 @@ export function approveApplication(
 ): RelayPoint | null {
   const store = getMutableStore();
   const application = store.applications.find((a) => a.id === id);
-  if (!application || application.status !== "pending") return null;
+  if (!application || application.status !== RelayPointStatusBackend.PENDING) return null;
 
   const managerData = application.manager;
   let manager = findRelayPointManager({ email: managerData.email, phone: managerData.phone });
@@ -214,7 +240,7 @@ export function approveApplication(
     capacity: overrides?.capacity ?? application.capacity,
     currentLoad: 0,
     handlingFee: overrides?.handlingFee ?? application.handlingFee,
-    status: "active",
+    status: RelayPointStatusBackend.APPROVED,
     managerId: manager.id,
   });
 
@@ -222,15 +248,15 @@ export function approveApplication(
     manager.managedRelayPointIds.push(point.id);
   }
 
-  application.status = "approved";
+  application.status = RelayPointStatusBackend.APPROVED;
   return point;
 }
 
 export function rejectApplication(id: string): boolean {
   const store = getMutableStore();
   const application = store.applications.find((a) => a.id === id);
-  if (!application || application.status !== "pending") return false;
-  application.status = "rejected";
+  if (!application || application.status !== RelayPointStatusBackend.PENDING) return false;
+  application.status = RelayPointStatusBackend.REJECTED;
   return true;
 }
 

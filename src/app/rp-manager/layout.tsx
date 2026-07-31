@@ -9,12 +9,24 @@ import {
   History,
   LogOut,
   MapPin,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/rp-manager", label: "Mon point relais", icon: MapPin },
-  { href: "/rp-manager", label: "Colis en stock", icon: Package, hash: "stock" },
+  {
+    href: "/rp-manager",
+    label: "Colis en stock",
+    icon: Package,
+    hash: "stock",
+  },
+  {
+    href: "/rp-manager",
+    label: "Politique de prix",
+    icon: DollarSign,
+    hash: "pricing",
+  }, // <--- ADD THIS
   { href: "/rp-manager", label: "Historique", icon: History, hash: "history" },
 ];
 
