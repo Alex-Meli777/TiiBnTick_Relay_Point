@@ -2,8 +2,8 @@ name: Sync to Internal Org Repo
 
 on:
   push:
-    branches:
-      - main # Change to master if your default branch is master
+    branches: ['*']
+  workflow_dispatch:
 
 jobs:
   repo-sync:
@@ -12,9 +12,11 @@ jobs:
       - name: Checkout external repository code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for all branches and tags
+          fetch-depth: 0
 
-      - name: Push changes to internal org repository
+      - name: Push to internal org repository
+        env:
+          PAT: ${{ secrets.TARGET_REPO_PAT }}
         run: |
-          git remote add target https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@github.com/tiibntick-org/TiiBnTick-RelayPoint-Frontend.git
-          git push --force target main
+          git remote add target https://x-access-token:${PAT}@github.com/tiibntick-org/TiiBnTick-RelayPoint-Frontend.git
+          git push --force target --all
